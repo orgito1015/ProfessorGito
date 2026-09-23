@@ -2,11 +2,11 @@
 const record = (id, path, title, text, time = '08:00:00') => ({ id, path, title, text, time });
 export const CONTENT_VERSION = 2;
 export const missions = [
- { id:'cold-boot', scenario:'cinder-prime', title:'Cold Boot', chapter:'PROLOGUE', client:'Cinder', minutes:'5–8',
-   summary:'Your first morning at Cinder. Iva has left a small puzzle in the training environment.',
+ { id:'cold-boot', scenario:'cinder-prime', title:'Cold Boot', chapter:'PROLOGUE', client:'StarX', minutes:'5–8',
+   summary:'Your first morning at StarX. Iva has left a small puzzle in the training environment.',
    brief:'Iva: Welcome, operator. Start with help, read your scope, and connect to training. Read the handover and access records. Preserve both. Prove which account still has access, revoke it, then verify. All commands act on fictional systems.',
    next:'bakery', extension:false, initialScope:['training'],
-   nodes:[{id:'training', label:'Training workstation', address:'192.0.2.10', role:'Cinder sandbox', files:[
+   nodes:[{id:'training', label:'Training workstation', address:'192.0.2.10', role:'StarX sandbox', files:[
      record('handover','/docs/handover.txt','Contractor handover','08:00 , Contractor Mira finished yesterday. Her temporary account is visitor. Permanent operator account: {username}.'),
      record('access','/logs/access.log','Access snapshot','08:04 , visitor: enabled, role=temporary. {username}: enabled, role=operator. The handover says visitor should have expired.','08:04:00')]}],
    objectives:[{id:'scope',label:'Read the rules of engagement',kind:'flag',value:'scope'}, {id:'collect',label:'Preserve the handover and access snapshot',kind:'evidence',values:['handover','access']},{id:'respond',label:'Revoke the expired temporary account',kind:'action',value:'revoke-visitor'},{id:'verify',label:'Verify access and operator availability',kind:'verified'},{id:'report',label:'Submit an evidence-backed finding',kind:'reported'}],
@@ -216,7 +216,7 @@ export const missions = [
     "A valid signature can cover an unapproved artifact. Read the CI audit to explain the discrepancy.",
     "Preserve all four records, use solve Q17-B, connect build-server, respond rollback-release, then verify."
   ],
-  "debrief": "The evidence supports build substitution through HLC-OPS, not intent by every Quillsoft engineer. The approved artifact and signed artifact were different. Cinder sends the compatible rollback to Halden. An audit reference points to the same integration at Port Kalder. Iva leaves for a meeting with Halcyon and stops answering.",
+  "debrief": "The evidence supports build substitution through HLC-OPS, not intent by every Quillsoft engineer. The approved artifact and signed artifact were different. StarX sends the compatible rollback to Halden. An audit reference points to the same integration at Port Kalder. Iva leaves for a meeting with Halcyon and stops answering.",
   "transfer": {
     "question": "What should an approval system bind to?",
     "choices": [
@@ -426,10 +426,10 @@ export const missions = [
   "scenario": "cinder-prime",
   "title": "Inside",
   "chapter": "CASE 05",
-  "client": "Cinder",
+  "client": "StarX",
   "minutes": "15–25",
   "summary": "Iva left a dead drop. Its message contradicts the name on the access log.",
-  "brief": "CINDER: We have the authorized Halcyon investigation mirror and Iva's sealed message. Inspect the identity and location records, decode the hexadecimal dead drop with decode drop, then use solve <credential-id> to identify the credential used remotely. Account ownership alone does not identify the actor. Restrict access before handing off the evidence.",
+  "brief": "STARX: We have the authorized Halcyon investigation mirror and Iva's sealed message. Inspect the identity and location records, decode the hexadecimal dead drop with decode drop, then use solve <credential-id> to identify the credential used remotely. Account ownership alone does not identify the actor. Restrict access before handing off the evidence.",
   "next": "null-route",
   "extension": false,
   "initialScope": [
@@ -533,7 +533,7 @@ export const missions = [
         "drop",
         "letter"
       ],
-      "impact": "Shared integration token revoked. Individual operator access remains available. Iva can return safely to Cinder.",
+      "impact": "Shared integration token revoked. Individual operator access remains available. Iva can return safely to StarX.",
       "service": true,
       "quality": 20
     },
@@ -603,7 +603,7 @@ export const missions = [
   "scenario": "cinder-prime",
   "title": "Null Route",
   "chapter": "FINALE",
-  "client": "Cinder / joint client response",
+  "client": "StarX / joint client response",
   "minutes": "15–25",
   "summary": "The immediate intrusion is contained. Decide what survives: the evidence, the partnership, or only the boundary.",
   "brief": "IVA: We can prove the integration path and the unauthorized override. We cannot honestly name every person behind it. Review the joint case bundle, seal it with solve <bundle-id>, and choose a final response. After the report, choose Disclosure, The Offer, or Null Route. Earlier reports and service outages will shape the epilogue. None of these choices rewrites the evidence.",
@@ -624,7 +624,7 @@ export const missions = [
           "id": "chain",
           "path": "/case/chain.txt",
           "title": "Cross-case evidence chain",
-          "text": "Bundle CINDER-7: approved build Q17-A replaced by Q17-B through HLC-OPS; cache-sync traffic observed at Halden and the port; shared identity prevents attribution to a single person. Originals are held by the respective clients.",
+          "text": "Bundle STARX-7: approved build Q17-A replaced by Q17-B through HLC-OPS; cache-sync traffic observed at Halden and the port; shared identity prevents attribution to a single person. Originals are held by the respective clients.",
           "time": "09:00:00"
         },
         {
@@ -638,7 +638,7 @@ export const missions = [
           "id": "offer",
           "path": "/case/offer.txt",
           "title": "Halcyon offer",
-          "text": "Halcyon offers Cinder a funded internal investigation role if the bundle remains non-public. Evidence must still be retained for the clients. Accepting brings resources but creates dependence on the organization under scrutiny.",
+          "text": "Halcyon offers StarX a funded internal investigation role if the bundle remains non-public. Evidence must still be retained for the clients. Accepting brings resources but creates dependence on the organization under scrutiny.",
           "time": "09:00:00"
         }
       ]
@@ -749,7 +749,7 @@ export const missions = [
   "puzzle": {
     "prompt": "Which bundle contains the corroborated cross-case record? Use solve <bundle-id>.",
     "answers": [
-      "cinder-7"
+      "starx-7"
     ],
     "requires": [
       "chain",
@@ -757,12 +757,12 @@ export const missions = [
       "offer",
       "recovery"
     ],
-    "success": "CINDER-7 is sealed with source references. Final response and disclosure are separate decisions."
+    "success": "STARX-7 is sealed with source references. Final response and disclosure are separate decisions."
   },
   "hints": [
     "Read the case chain, disclosure agreement, offer, and recovery plan.",
     "The bundle ID is in the cross-case chain. A sealed evidence bundle can support different disclosure choices.",
-    "Collect chain, contract, offer, recovery; solve CINDER-7; connect recovery-desk; choose a response, verify, and submit the qualified finding."
+    "Collect chain, contract, offer, recovery; solve STARX-7; connect recovery-desk; choose a response, verify, and submit the qualified finding."
   ],
   "debrief": "Containment, service restoration, and accountability are separate decisions. Your bundle identifies the unauthorized integration path and preserves uncertainty about individuals. Iva and the clients now wait for your final choice. Choose from the ending panel after this report.",
   "transfer": {
@@ -1013,7 +1013,7 @@ export const missions = [
   "scenario": "cinder-shadow",
   "title": "Null Signal",
   "chapter": "FINALE",
-  "client": "Meridian Trust / Cinder",
+  "client": "Meridian Trust / StarX",
   "minutes": "20–30",
   "summary": "A message arrives: pay within 48 hours or a customer-data sample gets sold. Prove what was actually taken before anyone decides what happens next.",
   "brief": "IVA: The persistence and the tunnel are gone. Now there is a demand. Review the message, the leaked sample, the forensic scope check, and the breach-notification requirement. Use solve <bundle-id> once the sample is corroborated against Meridian's real schema, then choose how Meridian responds. Paying does not remove the notification obligation.",
@@ -1125,7 +1125,7 @@ export const missions = [
 }
 ];
 export const scenarios = [
- {id:'cinder-prime',title:'Cinder Investigation',tagline:'Seven cases. A quiet vendor problem becomes a cross-client intrusion.',firstMission:'cold-boot',endMission:'null-route'},
+ {id:'cinder-prime',title:'StarX Investigation',tagline:'Seven cases. A quiet vendor problem becomes a cross-client intrusion.',firstMission:'cold-boot',endMission:'null-route'},
  {id:'cinder-shadow',title:'Signal Zero',tagline:'Three advanced cases. An identity attack, a living intrusion, and an extortion demand that overstates its own damage.',firstMission:'token-break',endMission:'null-signal'}
 ];
 export function missionsFor(scenarioId){ return missions.filter(m=>m.scenario===scenarioId); }

@@ -30,7 +30,7 @@ const stories={
 export function messagesFor(m,state){
  const [sender,subject,body]=stories[m.id];
  const out=[{id:m.id+':brief',sender,subject,body}];
- if(state.evidence.length)out.push({id:m.id+':evidence',sender:'Cinder case desk',subject:'Your evidence archive is open',body:'Source references have been preserved. Use the Board to connect records and add your own notes. These notes are hypotheses, not automatic findings.'});
+ if(state.evidence.length)out.push({id:m.id+':evidence',sender:'StarX case desk',subject:'Your evidence archive is open',body:'Source references have been preserved. Use the Board to connect records and add your own notes. These notes are hypotheses, not automatic findings.'});
  if(state.action)out.push({id:m.id+':response',sender:m.client,subject:'Response status',body:m.actions.find(a=>a.id===state.action).impact});
  if(state.report)out.push({id:m.id+':report',sender:'Iva Marlow',subject:'Case review',body:m.debrief});
  return out;

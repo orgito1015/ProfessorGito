@@ -93,9 +93,9 @@ Proposed character functions:
 
 | Character or entity | Story function |
 |---|---|
-| Player | New operator at Cinder; learns the work and decides what evidence supports |
+| Player | New operator at StarX; learns the work and decides what evidence supports |
 | Iva Marlow | Mentor who teaches careful investigation and later withholds information |
-| Cinder | Small security collective balancing client trust, evidence, and limited resources |
+| StarX | Small security collective balancing client trust, evidence, and limited resources |
 | Halden Freight | First client whose normal operations matter during containment |
 | Quillsoft | Shared vendor whose update trail connects apparently separate incidents |
 | TALLOW | In-world label for the observed intrusion activity; not an attribution proven by one clue |
@@ -106,7 +106,7 @@ The original campaign structure is retained as an expansion outline:
 
 | Chapter | Narrative purpose | Learning focus |
 |---|---|---|
-| Cold Boot | Establish Cinder, Iva, and a concrete first assignment | Navigation, help, reading evidence |
+| Cold Boot | Establish StarX, Iva, and a concrete first assignment | Navigation, help, reading evidence |
 | Legit Work | Build trust through scoped work; uncover another intruder | Permissions, exposure, responsible reporting |
 | Someone Else's Footprints | Reconstruct the incident | Timelines, persistence, distinguishing signal from noise |
 | The Supply Chain | Connect incidents through Quillsoft | Update provenance, secret handling, trust boundaries |
@@ -391,6 +391,6 @@ The slice is done when a new player can begin without an account, complete a tau
 
 ## 19. Revision record
 
-This revision preserves the name, Cinder setting, principal organizations, campaign ambition, simulated-only approach, browser delivery, and three proposed endings. It adds a sharper loop, a concrete incident design, structured reporting, an evidence standard, release boundaries, an effort model, sourced competitor checks, and a preliminary scorecard.
+This revision preserves the name, StarX setting, principal organizations, campaign ambition, simulated-only approach, browser delivery, and three proposed endings. It adds a sharper loop, a concrete incident design, structured reporting, an evidence standard, release boundaries, an effort model, sourced competitor checks, and a preliminary scorecard.
 
 It revises the opening, reduces the initial scope, defers the skill tree and extra modes, makes timers contextual, replaces vague grading with a transparent rubric, and treats all market/learning claims as hypotheses until tested. ProfessorGito-Idea-Evaluation.md remains the unchanged evaluation procedure; this project file contains its preliminary application and the next validation plan.

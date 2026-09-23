@@ -153,7 +153,7 @@ collect offer
 connect recovery-desk
 cat /plans/recovery.txt
 collect recovery
-solve CINDER-7
+solve STARX-7
 respond restore-and-seal
 verify
 report
