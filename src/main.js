@@ -1,5 +1,6 @@
 import { restoreResponse, updateNote, toggleLink, solveExercise, nextGuidedStep } from './engine/extensions.js';
 import { connections } from './content/extras.js';
+import { aboutContent } from './content/about.js';
 import { graph } from './ui/graphs.js';
 import { exercisePanel } from './ui/exercises.js';
 import { AudioBus } from './ui/audio.js';
@@ -30,6 +31,13 @@ function commandGuide(){
  const d=el('dialog',{class:'settings-dialog command-guide','aria-labelledby':'guide-title'});
  const groups=[['Explore',[['scope','Read authorized hosts'],['scan','List the network'],['connect ','Connect to a host'],['ls','List evidence files'],['cat ','Read a file path']]],['Investigate',[['collect ','Preserve a record ID'],['decode ','Decode a record ID'],['solve ','Submit a deduction'],['hint','Ask for a clue']]],['Resolve',[['actions','Compare available responses'],['request-scope','Request response authority'],['respond ','Apply a response ID'],['verify','Check the result'],['report','Open your report']]]];
  d.append(el('div',{class:'eyebrow'},'TERMINAL COMPANION'),el('h2',{id:'guide-title'},'A command at a time.'),el('p',{},'Choose a command to place it in the terminal. Add a host, path, or record ID when needed, then press Enter.'),groups.map(([name,items])=>el('section',{},el('h3',{},name),el('div',{class:'guide-grid'},items.map(([cmd,desc])=>button(el('span',{},el('code',{},cmd.trim()),el('small',{},desc)),()=>{d.close();insertCommand(cmd);},'guide-command'))))),el('p',{class:'muted'},'↑ ↓ Command history · Tab Complete a command · Alt+/ Focus terminal'),button('Close',()=>d.close(),'primary'));
+ document.body.append(d);d.addEventListener('close',()=>d.remove());d.showModal();
+}
+function aboutDialog(){
+ const d=el('dialog',{class:'settings-dialog about-dialog','aria-labelledby':'about-title'});
+ d.append(el('div',{class:'eyebrow'},'ABOUT'),el('h2',{id:'about-title'},'ProfessorGito'),
+  aboutContent.map(b=>b.h?el('h3',{},b.h):el('p',{},b.p)),
+  button('Close',()=>d.close(),'primary'));
  document.body.append(d);d.addEventListener('close',()=>d.remove());d.showModal();
 }
 function notice(text){status=text;document.querySelector('#save-status')?.replaceChildren(text);}
@@ -217,7 +225,7 @@ function titleScreen(){
  const start=()=>{boot.view='game';render();document.querySelector('#command')?.focus();};
  const scen=scenarios.find(s=>s.id===scenarioOf(state.missionId));
  const canvas=el('canvas',{class:'title-rain','aria-hidden':true});
- return el('div',{class:'title-screen'},canvas,el('main',{class:'title-card'},el('div',{class:'title-mark','aria-hidden':'true'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('h1',{class:'title-logo'},'Professor',el('span',{class:'title-gito'},'Gito')),el('p',{class:'title-tag'},scen?.tagline||'A terminal investigation thriller.'),el('button',{type:'button',class:'primary title-btn',onClick:start},started?'Continue':'New investigation'),started?button('Start a new campaign',()=>{if(confirm('Start over? Export your save first to retain this campaign. Your username and preferences will be kept.')){boot.view='game';newCampaign();}},'title-alt'):el('p',{class:'title-note muted'},'Pick a username, then investigate by typing commands. Progress saves automatically on this browser.')));
+ return el('div',{class:'title-screen'},canvas,el('nav',{class:'title-menu'},button('About Game',aboutDialog,'title-menu-link')),el('main',{class:'title-card'},el('div',{class:'title-mark','aria-hidden':'true'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('h1',{class:'title-logo'},'Professor',el('span',{class:'title-gito'},'Gito')),el('p',{class:'title-tag'},scen?.tagline||'A terminal investigation thriller.'),el('button',{type:'button',class:'primary title-btn',onClick:start},started?'Continue':'New investigation'),started?button('Start a new campaign',()=>{if(confirm('Start over? Export your save first to retain this campaign. Your username and preferences will be kept.')){boot.view='game';newCampaign();}},'title-alt'):el('p',{class:'title-note muted'},'Pick a username, then investigate by typing commands. Progress saves automatically on this browser.')));
 }
 function render(){
  applyTheme(state.preferences);

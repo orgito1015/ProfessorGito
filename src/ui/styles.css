@@ -130,6 +130,12 @@ footer{font-size:.68rem;padding-top:16px;line-height:1.7}
 /* Game front: title screen, collapsed case brief, compact case list. */
 .title-screen{position:relative;overflow:hidden;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% -10%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 60%),var(--bg)}
 .title-rain{position:absolute;inset:0;width:100%;height:100%;opacity:.22;pointer-events:none}
+.title-menu{position:absolute;top:20px;right:20px;z-index:1}
+.title-menu-link{border-color:transparent;font-size:.8rem;color:var(--muted)}
+.title-menu-link:hover{color:var(--accent);background:transparent}
+.about-dialog{max-width:560px}
+.about-dialog h3{margin-top:20px}
+.about-dialog p{font-size:.88rem;line-height:1.7;color:var(--text)}
 .title-card{position:relative;z-index:1;max-width:430px;width:100%;text-align:center;display:grid;justify-items:center;gap:6px;background:color-mix(in srgb,var(--bg) 55%,transparent);border-radius:20px;padding:12px}
 .title-mark{display:grid;place-items:center;width:62px;height:62px;border-radius:16px;overflow:hidden;margin-bottom:10px}
 .title-logo{font-size:clamp(2.4rem,7vw,3.4rem);margin:4px 0 2px;letter-spacing:-.05em;font-weight:700}
