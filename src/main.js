@@ -36,7 +36,7 @@ function commandGuide(){
 function aboutDialog(){
  const d=el('dialog',{class:'settings-dialog about-dialog','aria-labelledby':'about-title'});
  d.append(el('div',{class:'eyebrow'},'ABOUT'),el('h2',{id:'about-title'},'ProfessorGito'),
-  aboutContent.map(b=>b.h?el('h3',{},b.h):el('p',{},b.p)),
+  ...aboutContent.map(b=>b.h?el('h3',{},b.h):el('p',{},b.p)),
   button('Close',()=>d.close(),'primary'));
  document.body.append(d);d.addEventListener('close',()=>d.remove());d.showModal();
 }
