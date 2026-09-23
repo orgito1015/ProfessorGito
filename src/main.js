@@ -70,7 +70,7 @@ function welcomeScreen(){
  const error=el('p',{role:'alert',class:'warning'});
  const preview=el('p',{class:'username-preview'},(input.value||'yourname')+'@starx:/$');
  input.addEventListener('input',()=>{welcomeUsernameDraft=input.value;preview.textContent=(input.value||'yourname')+'@starx:/$';});
- const missionGrid=el('div',{class:'mission-grid',role:'radiogroup','aria-label':'Mission'},scenarios.map(scen=>el('button',{type:'button',class:'mission-choice','aria-pressed':chosenScenarioId===scen.id,onClick:()=>{chosenScenarioId=scen.id;render();document.querySelector('#player-name')?.focus();}},el('strong',{},scen.title),el('small',{},missionsFor(scen.id).length+' cases'),el('p',{},scen.tagline))));
+ const missionGrid=el('div',{class:'mission-grid',role:'radiogroup','aria-label':'Mission'},scenarios.map(scen=>el('button',{type:'button',class:'mission-choice','aria-pressed':chosenScenarioId===scen.id,onClick:()=>{chosenScenarioId=scen.id;render();document.querySelector('#player-name')?.focus();}},el('strong',{},scen.title),el('small',{},missionsFor(scen.id).length+' cases'),scen.tagline?el('p',{},scen.tagline):null)));
  const form=el('form',{class:'welcome-form'},el('label',{for:'player-name'},'Username'),input,preview,el('small',{},'2 to 20 characters. Start with a letter. Letters, numbers, underscores, and hyphens are allowed.'),error,el('button',{type:'submit',class:'primary'},'Start the campaign'));
  form.onsubmit=e=>{e.preventDefault();try{const scen=scenarios.find(s=>s.id===chosenScenarioId)||scenarios[0];state=freshState(scen.firstMission);state=setUsername(state,input.value);persist();boot.view='game';render();document.querySelector('#command')?.focus();}catch(e){error.textContent=e.message;}};
  return el('div',{class:'welcome-screen'},el('div',{class:'welcome-card'},el('span',{class:'brand-mark'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('h1',{},'ProfessorGito'),el('p',{class:'muted'},'A fictional StarX investigation. Choose a mission, then a terminal username, to begin.'),el('h2',{class:'welcome-subhead'},'Mission'),missionGrid,form));
@@ -186,11 +186,38 @@ function panel(m){
  const records=evidenceRecords(m).filter(f=>state.evidence.includes(f.id));
  return el('div',{},records.length?el('div',{class:'panel-intro'},el('span',{class:'count'},records.length+'/'+evidenceRecords(m).length+' PRESERVED')):null,records.length?records.map(f=>el('article',{class:'evidence-card'},el('div',{class:'eyebrow'},f.id+' / '+f.time),el('h3',{},f.title),el('p',{},personalize(f.text,state.username)),el('code',{},f.node+':'+f.path))):el('div',{class:'empty'},el('div',{class:'empty-icon'},emptyIcon()),el('h3',{},'Nothing preserved yet.'),el('p',{},'Read a record with cat, then collect <id>.'),button('Show a hint',()=>run('hint'),'secondary')));
 }
+function startMatrixRain(canvas){
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const ctx=canvas.getContext('2d');
+ const chars='01アイウエオカキクケコサシスセソタチツテト$#@%&+-/\\<>[]';
+ let cols=0,drops=[];
+ function resize(){
+  canvas.width=canvas.offsetWidth;canvas.height=canvas.offsetHeight;
+  cols=Math.max(1,Math.floor(canvas.width/18));
+  drops=new Array(cols).fill(0).map(()=>Math.floor(Math.random()*-40));
+ }
+ resize();
+ window.addEventListener('resize',resize);
+ function draw(){
+  if(!canvas.isConnected)return;
+  const accent=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#c0e98a';
+  ctx.fillStyle='rgba(0,0,0,.07)';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.font='15px ui-monospace,monospace';ctx.fillStyle=accent;
+  for(let i=0;i<cols;i++){
+   ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,drops[i]*18);
+   if(drops[i]*18>canvas.height&&Math.random()>.975)drops[i]=0;
+   drops[i]++;
+  }
+  requestAnimationFrame(draw);
+ }
+ requestAnimationFrame(draw);
+}
 function titleScreen(){
  const started=state.profileSet||state.completed.length||state.tick>0||state.transcript.length>1;
  const start=()=>{boot.view='game';render();document.querySelector('#command')?.focus();};
  const scen=scenarios.find(s=>s.id===scenarioOf(state.missionId));
- return el('div',{class:'title-screen'},el('main',{class:'title-card'},el('div',{class:'title-mark','aria-hidden':'true'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('h1',{class:'title-logo'},'Professor',el('span',{class:'title-gito'},'Gito')),el('p',{class:'title-tag'},scen?.tagline||'A terminal investigation thriller.'),el('button',{type:'button',class:'primary title-btn',onClick:start},started?'Continue':'New investigation'),started?button('Start a new campaign',()=>{if(confirm('Start over? Export your save first to retain this campaign. Your username and preferences will be kept.')){boot.view='game';newCampaign();}},'title-alt'):el('p',{class:'title-note muted'},'Pick a username, then investigate by typing commands. Progress saves automatically on this browser.')));
+ const canvas=el('canvas',{class:'title-rain','aria-hidden':true});
+ return el('div',{class:'title-screen'},canvas,el('main',{class:'title-card'},el('div',{class:'title-mark','aria-hidden':'true'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('h1',{class:'title-logo'},'Professor',el('span',{class:'title-gito'},'Gito')),el('p',{class:'title-tag'},scen?.tagline||'A terminal investigation thriller.'),el('button',{type:'button',class:'primary title-btn',onClick:start},started?'Continue':'New investigation'),started?button('Start a new campaign',()=>{if(confirm('Start over? Export your save first to retain this campaign. Your username and preferences will be kept.')){boot.view='game';newCampaign();}},'title-alt'):el('p',{class:'title-note muted'},'Pick a username, then investigate by typing commands. Progress saves automatically on this browser.')));
 }
 function render(){
  applyTheme(state.preferences);
@@ -207,7 +234,7 @@ function render(){
  if(oldCommand&&!resetTerminal&& !followTerminal)commandDraft=oldCommand.value;
  resetTerminal=false;followTerminal=false;
  applyTheme(state.preferences);audio.configure(state.preferences);
- if(boot.view!=='game'){app.replaceChildren(titleScreen());app.querySelector('.title-btn')?.focus();return;}
+ if(boot.view!=='game'){app.replaceChildren(titleScreen());app.querySelector('.title-btn')?.focus();startMatrixRain(app.querySelector('.title-rain'));return;}
  const m=missionById(state.missionId),done=m.objectives.filter(o=>objectiveDone(state,o)).length;
  const file=el('input',{type:'file',accept:'.json,application/json',hidden:true,'aria-label':'Import save file',onChange:e=>importSave(e.target.files[0])});
  const saveMenu=el('details',{class:'save-menu'},el('summary',{},'Save & restore'),el('div',{class:'save-menu-items'},button('Checkpoints',()=>{saveMenu.open=false;checkpointsDialog();}),button('Export save',()=>{saveMenu.open=false;exportSave();}),button('Import save',()=>{saveMenu.open=false;file.click();})));

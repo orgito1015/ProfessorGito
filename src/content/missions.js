@@ -1126,7 +1126,7 @@ export const missions = [
 ];
 export const scenarios = [
  {id:'cinder-prime',title:'StarX Investigation',tagline:'Seven cases. A quiet vendor problem becomes a cross-client intrusion.',firstMission:'cold-boot',endMission:'null-route'},
- {id:'cinder-shadow',title:'Signal Zero',tagline:'Three advanced cases. An identity attack, a living intrusion, and an extortion demand that overstates its own damage.',firstMission:'token-break',endMission:'null-signal'}
+ {id:'cinder-shadow',title:'Signal Zero',tagline:'',firstMission:'token-break',endMission:'null-signal'}
 ];
 export function missionsFor(scenarioId){ return missions.filter(m=>m.scenario===scenarioId); }
 export function campaignFor(scenarioId){ return missionsFor(scenarioId).map(m=>({id:m.id,title:m.title,status:'playable'})); }

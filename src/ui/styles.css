@@ -120,6 +120,7 @@ footer{font-size:.68rem;padding-top:16px;line-height:1.7}
 .focus-mode .workspace{max-width:1240px}.focus-mode .desk{grid-template-columns:minmax(0,1fr)}.focus-mode .terminal{height:clamp(560px,calc(100dvh - 240px),1200px)}
 .focus-mode .case-heading p{margin-bottom:14px}
 [data-contrast=true]{--soft-line:var(--line)}
+[data-contrast=true] .title-rain{display:none}
 @media(min-width:1800px){.desk{grid-template-columns:minmax(0,1.65fr) minmax(420px,1fr)}.line{font-size:.95rem}}
 @media(max-width:1250px){.layout{grid-template-columns:180px minmax(0,1fr)}.sidebar{padding-inline:9px}.workspace{padding:24px 20px}.desk{gap:14px;grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr)}.terminal-title{padding:10px 14px}.terminal-title small{display:none}.terminal-log{padding:20px 18px 8px}.simulation-badge{display:none}.case-top{gap:8px}.case-progress{display:none}.focus-mode{grid-template-columns:1fr}}
 @media(max-width:1000px){.layout{display:block}.sidebar{padding:12px 20px;border-right:0;border-bottom:1px solid var(--soft-line)}.sidebar>.eyebrow,.sidebar>h2{display:none}.sidebar nav{display:flex;overflow:auto;margin:0;padding:2px 0 6px;gap:8px}.case{min-width:190px;min-height:58px;padding:10px}.workspace{padding:24px 20px}.desk{grid-template-columns:minmax(0,1.2fr) minmax(290px,1fr)}.terminal,.intel{height:650px}.focus-mode .terminal{height:max(560px,calc(100dvh - 250px))}}
@@ -127,8 +128,9 @@ footer{font-size:.68rem;padding-top:16px;line-height:1.7}
 @media(max-width:420px){.topbar{padding:14px 16px}.top-actions{width:100%}.top-actions>*{flex:1}.top-actions .save-menu summary{text-align:center}.save-menu-items{left:0;right:auto}.sidebar{padding-inline:16px}.terminal-title small{display:none}.terminal-tools button{font-size:.7rem}.terminal-log{padding:18px 15px 6px}.command-form{margin-inline:10px}.terminal-bottom{padding-inline:12px}.panel{padding:18px}.intel-heading .muted{display:none}.settings-dialog{padding:22px}.guide-grid{grid-template-columns:1fr}.theme-grid{grid-template-columns:1fr}.brand small{font-size:.55rem}}
 
 /* Game front: title screen, collapsed case brief, compact case list. */
-.title-screen{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% -10%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 60%),var(--bg)}
-.title-card{max-width:430px;width:100%;text-align:center;display:grid;justify-items:center;gap:6px}
+.title-screen{position:relative;overflow:hidden;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% -10%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 60%),var(--bg)}
+.title-rain{position:absolute;inset:0;width:100%;height:100%;opacity:.22;pointer-events:none}
+.title-card{position:relative;z-index:1;max-width:430px;width:100%;text-align:center;display:grid;justify-items:center;gap:6px;background:color-mix(in srgb,var(--bg) 55%,transparent);border-radius:20px;padding:12px}
 .title-mark{display:grid;place-items:center;width:62px;height:62px;border-radius:16px;overflow:hidden;margin-bottom:10px}
 .title-logo{font-size:clamp(2.4rem,7vw,3.4rem);margin:4px 0 2px;letter-spacing:-.05em;font-weight:700}
 .title-gito{color:var(--accent)}
