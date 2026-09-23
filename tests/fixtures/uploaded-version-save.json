@@ -1,0 +1,110 @@
+{
+  "version": 2,
+  "username": "operator",
+  "profileSet": false,
+  "preferences": {
+    "fontSize": 16,
+    "contrast": false,
+    "theme": "arctic",
+    "difficulty": "expert",
+    "sound": true
+  },
+  "caseResults": {},
+  "ending": null,
+  "contentVersion": 2,
+  "missionId": "cold-boot",
+  "completed": [],
+  "node": "training",
+  "cwd": "/",
+  "flags": [
+    "scope"
+  ],
+  "read": [
+    "handover",
+    "access"
+  ],
+  "evidence": [
+    "handover",
+    "access"
+  ],
+  "action": null,
+  "verified": false,
+  "report": null,
+  "hintLevel": 0,
+  "tick": 6,
+  "events": [
+    {
+      "tick": 4,
+      "text": "Preserved handover from training:/docs/handover.txt"
+    },
+    {
+      "tick": 6,
+      "text": "Preserved access from training:/logs/access.log"
+    }
+  ],
+  "board": {
+    "notes": {
+      "handover": "My own review note"
+    },
+    "links": [
+      [
+        "access",
+        "handover"
+      ]
+    ]
+  },
+  "transcript": [
+    {
+      "kind": "system",
+      "text": "CINDER / SECURE WORKSPACE\nCold Boot\nIva: Welcome, operator. Start with help, read your scope, and connect to training. Read the handover and access records. Preserve both. Prove which account still has access, revoke it, then verify. All commands act on fictional systems.\n\nType help to get started."
+    },
+    {
+      "kind": "input",
+      "text": "scope"
+    },
+    {
+      "kind": "output",
+      "text": "AUTHORIZED: training. All other hosts are excluded. Listed response actions are authorized."
+    },
+    {
+      "kind": "input",
+      "text": "connect training"
+    },
+    {
+      "kind": "output",
+      "text": "Connected to training. Use ls to list its evidence files."
+    },
+    {
+      "kind": "input",
+      "text": "cat /docs/handover.txt"
+    },
+    {
+      "kind": "output",
+      "text": "Contractor handover [handover]\nSource: training:/docs/handover.txt / 08:00:00\n\n08:00 , Contractor Mira finished yesterday. Her temporary account is visitor. Permanent operator account: operator.\n\nPreserve with: collect handover"
+    },
+    {
+      "kind": "input",
+      "text": "collect handover"
+    },
+    {
+      "kind": "output",
+      "text": "Preserved Contractor handover. Source and timestamp added to the notebook."
+    },
+    {
+      "kind": "input",
+      "text": "cat /logs/access.log"
+    },
+    {
+      "kind": "output",
+      "text": "Access snapshot [access]\nSource: training:/logs/access.log / 08:04:00\n\n08:04 , visitor: enabled, role=temporary. operator: enabled, role=operator. The handover says visitor should have expired.\n\nPreserve with: collect access"
+    },
+    {
+      "kind": "input",
+      "text": "collect access"
+    },
+    {
+      "kind": "output",
+      "text": "Preserved Access snapshot. Source and timestamp added to the notebook."
+    }
+  ]
+}
