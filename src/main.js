@@ -6,8 +6,9 @@ import { exercisePanel } from './ui/exercises.js';
 import { AudioBus } from './ui/audio.js';
 import { themes, applyTheme } from './ui/themes.js';
 import { missionById, scenarios, campaignFor, missionsFor, scenarioOf } from './content/missions.js';
-import { freshState, execute, objectiveDone, evidenceRecords, commands, submitReport, nextCase, chooseEnding, replayCase, messagesFor } from './engine/game.js';
-import { loadLocal, saveLocal, parseSave, serializeSave, MAX_SAVE_BYTES, saveCheckpoint, listCheckpoints, loadCheckpoint, deleteCheckpoint, renameCheckpoint } from './storage/saves.js';
+import { freshState, execute, objectiveDone, evidenceRecords, complete, submitReport, nextCase, chooseEnding, replayCase, messagesFor, storyMatch } from './engine/game.js';
+import { clock, longDate } from './engine/shell.js';
+import { loadLocal, loadSlots, saveLocal, parseSave, serializeSave, MAX_SAVE_BYTES, saveCheckpoint, listCheckpoints, loadCheckpoint, deleteCheckpoint, renameCheckpoint } from './storage/saves.js';
 import { endingsFor, endingText } from './content/endings.js';
 import { setUsername, personalize } from './engine/profile.js';
 import { el, button, emptyIcon } from './ui/dom.js';
@@ -19,7 +20,7 @@ const app=document.querySelector('#app');
 const audio=new AudioBus();
 let noteTimer=null,pendingSaves=0;
 let commandDraft='',historyDraft='',followTerminal=true,resetTerminal=false,focusMode=false,sidebarOpen=true;
-let chosenScenarioId=scenarios[0].id,welcomeUsernameDraft='';
+let welcomeUsernameDraft='',slots=null,chapterCard=null;
 let renderedTab=null;const panelScroll={};
 try{focusMode=localStorage.getItem('gito-focus-mode')==='true';}catch{}
 function setFocusMode(value){focusMode=value;try{localStorage.setItem('gito-focus-mode',String(value));}catch{}}
@@ -29,8 +30,8 @@ function toggleSidebar(){sidebarOpen=!sidebarOpen;try{localStorage.setItem('gito
 function insertCommand(text){const input=document.querySelector('#command');commandDraft=text;if(input){input.value=text;input.focus();input.setSelectionRange(text.length,text.length);}}
 function commandGuide(){
  const d=el('dialog',{class:'settings-dialog command-guide','aria-labelledby':'guide-title'});
- const groups=[['Explore',[['scope','Read authorized hosts'],['scan','List the network'],['connect ','Connect to a host'],['ls','List evidence files'],['cat ','Read a file path']]],['Investigate',[['collect ','Preserve a record ID'],['decode ','Decode a record ID'],['solve ','Submit a deduction'],['hint','Ask for a clue']]],['Resolve',[['actions','Compare available responses'],['request-scope','Request response authority'],['respond ','Apply a response ID'],['verify','Check the result'],['report','Open your report']]]];
- d.append(el('div',{class:'eyebrow'},'TERMINAL COMPANION'),el('h2',{id:'guide-title'},'A command at a time.'),el('p',{},'Choose a command to place it in the terminal. Add a host, path, or record ID when needed, then press Enter.'),groups.map(([name,items])=>el('section',{},el('h3',{},name),el('div',{class:'guide-grid'},items.map(([cmd,desc])=>button(el('span',{},el('code',{},cmd.trim()),el('small',{},desc)),()=>{d.close();insertCommand(cmd);},'guide-command'))))),el('p',{class:'muted'},'↑ ↓ Command history · Tab Complete a command · Alt+/ Focus terminal'),button('Close',()=>d.close(),'primary'));
+ const groups=[['Recon',[['scope','Read the rules of engagement'],['nmap','Discover services on authorized hosts'],['ssh ','Open a session on a host'],['exit','Close the session']]],['Explore',[['ls -la ','List a directory in detail'],['cd ','Change directory'],['cat ','Read a file'],['grep -rin ','Search file contents'],['find / -name ','Find files by name'],['ps aux','List processes'],['netstat -tnp','List connections']]],['Investigate',[['collect ','Preserve a record ID or path'],['sha256sum ','Digest a file'],['decode ','Decode a hex record'],['solve ','Submit a deduction'],['mail','Read your inbox'],['hint','Ask for a clue']]],['Resolve',[['actions','Compare available responses'],['request-scope','Request response authority'],['respond ','Apply a response ID'],['verify','Check the result'],['report','Open your report']]]];
+ d.append(el('div',{class:'eyebrow'},'TERMINAL COMPANION'),el('h2',{id:'guide-title'},'A command at a time.'),el('p',{},'Choose a command to place it in the terminal. Add a host, path, or record ID when needed, then press Enter.'),groups.map(([name,items])=>el('section',{},el('h3',{},name),el('div',{class:'guide-grid'},items.map(([cmd,desc])=>button(el('span',{},el('code',{},cmd.trim()),el('small',{},desc)),()=>{d.close();insertCommand(cmd);},'guide-command'))))),el('p',{class:'muted'},'↑ ↓ Command history · Tab Complete commands, hosts and paths · man <command> for flags · Alt+/ Focus terminal'),button('Close',()=>d.close(),'primary'));
  document.body.append(d);d.addEventListener('close',()=>d.remove());d.showModal();
 }
 function aboutDialog(){
@@ -46,7 +47,7 @@ function persist(){
  saveQueue=saveQueue.catch(()=>{}).then(()=>saveLocal(snapshot)).then(()=>notice('Saved on this browser')).catch(()=>notice('Local save unavailable; use Export save')).finally(()=>{pendingSaves--;saving=pendingSaves>0;});
 }
 function changeCase(next){clearTimeout(noteTimer);noteTimer=null;boardLinking=null;commandDraft='';historyDraft='';resetTerminal=true;state=next;reportDraft={finding:'',cited:[],uncertainty:false};transferAnswer=null;history=[];historyIndex=0;activeTab='evidence';persist();render();}
-function beep(){audio.configure(state.preferences,true).then(()=>audio.cue());}
+function beep(kind){audio.configure(state.preferences,true).then(()=>audio.cue(kind));}
 function run(input){
  commandDraft='';historyDraft='';followTerminal=true;
  if(!input.trim()){
@@ -54,7 +55,7 @@ function run(input){
   persist();render();document.querySelector('#command')?.focus();return;
  }
  clearTimeout(noteTimer);noteTimer=null;const beforeTick=state.tick,r=execute(state,input);state=r.state;if(r.intent){activeTab=r.intent;setFocusMode(false);}
- if(state.tick>beforeTick&&r.state.events.at(-1)?.tick===state.tick)beep();
+ if(r.notices.length)beep('mail');else if(r.error)beep('error');else if(state.tick>beforeTick&&r.state.events.at(-1)?.tick===state.tick)beep();
  history.push(input);history=history.slice(-100);historyIndex=history.length;
  persist();render();document.querySelector(r.intent?'#case-panel':'#command')?.focus();
 }
@@ -78,15 +79,50 @@ function welcomeScreen(){
  const error=el('p',{role:'alert',class:'warning'});
  const preview=el('p',{class:'username-preview'},(input.value||'yourname')+'@starx:/$');
  input.addEventListener('input',()=>{welcomeUsernameDraft=input.value;preview.textContent=(input.value||'yourname')+'@starx:/$';});
- const missionGrid=el('div',{class:'mission-grid',role:'radiogroup','aria-label':'Mission'},scenarios.map(scen=>el('button',{type:'button',class:'mission-choice','aria-pressed':chosenScenarioId===scen.id,onClick:()=>{chosenScenarioId=scen.id;render();document.querySelector('#player-name')?.focus();}},el('strong',{},scen.title),el('small',{},missionsFor(scen.id).length+' cases'),scen.tagline?el('p',{},scen.tagline):null)));
- const form=el('form',{class:'welcome-form'},el('label',{for:'player-name'},'Username'),input,preview,el('small',{},'2 to 20 characters. Start with a letter. Letters, numbers, underscores, and hyphens are allowed.'),error,el('button',{type:'submit',class:'primary'},'Start the campaign'));
- form.onsubmit=e=>{e.preventDefault();try{const scen=scenarios.find(s=>s.id===chosenScenarioId)||scenarios[0];state=freshState(scen.firstMission);state=setUsername(state,input.value);persist();boot.view='game';render();document.querySelector('#command')?.focus();}catch(e){error.textContent=e.message;}};
- return el('div',{class:'welcome-screen'},el('div',{class:'welcome-card'},el('span',{class:'brand-mark'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('h1',{},'ProfessorGito'),el('p',{class:'muted'},'A fictional StarX investigation. Choose a mission, then a terminal username, to begin.'),el('h2',{class:'welcome-subhead'},'Mission'),missionGrid,form));
+ const form=el('form',{class:'welcome-form'},el('label',{for:'player-name'},'Username'),input,preview,el('small',{},'2 to 20 characters. Start with a letter. Letters, numbers, underscores, and hyphens are allowed.'),error,el('button',{type:'submit',class:'primary'},'Continue to scenarios'));
+ form.onsubmit=e=>{e.preventDefault();try{state=setUsername(state,input.value);persist();openScenarios();}catch(e){error.textContent=e.message;}};
+ return el('div',{class:'welcome-screen'},el('div',{class:'welcome-card'},el('span',{class:'brand-mark'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('h1',{},'ProfessorGito'),el('p',{class:'muted'},'Fictional security investigations played through a terminal. Choose the name you will sign your reports with.'),form));
+}
+const hasProgress=st=>st.tick>0||st.completed.length>0;
+function openScenarios(){boot.view='scenarios';slots=null;render();loadSlots().then(x=>{slots=x;}).catch(()=>{slots={};}).finally(()=>{if(boot.view==='scenarios')render();});}
+function openScenario(id,restart=false){
+ const scen=scenarios.find(x=>x.id===id);
+ if(restart&&!confirm('Restart '+scen.title+' from the beginning? Progress in this scenario is cleared. Other scenarios are not affected.'))return;
+ let next=restart?null:scenarioOf(state.missionId)===id?state:slots?.[id]||null;
+ if(next&&next!==state){next=structuredClone(next);next.username=state.username;next.profileSet=state.profileSet;next.preferences=structuredClone(state.preferences);}
+ const fresh=!next||!hasProgress(next);
+ if(fresh)next=freshState(scen.firstMission,[],{username:state.username,profileSet:state.profileSet,preferences:state.preferences});
+ boot.view=fresh?'intro':'game';changeCase(next);
+}
+function scenarioScreen(){
+ const current=scenarioOf(state.missionId);
+ const cards=scenarios.map((scen,i)=>{
+  const list=missionsFor(scen.id),saved=current===scen.id?state:slots?.[scen.id],progress=saved&&hasProgress(saved);
+  const done=saved?list.filter(m=>saved.completed.includes(m.id)).length:0,ended=saved?.ending?endingsFor(scen.id).find(e=>e.id===saved.ending)?.title:null;
+  const where=progress?(ended?'Finished: '+ended:'Chapter '+(list.findIndex(m=>m.id===saved.missionId)+1)+' of '+list.length+': '+missionById(saved.missionId).title):list.length+' chapters';
+  return el('article',{class:'scenario-card'+(current===scen.id&&progress?' current':'')},
+   el('div',{class:'eyebrow'},String(i+1).padStart(2,'0')+' . '+scen.difficulty.toUpperCase()),
+   el('h2',{},scen.title),el('p',{class:'scenario-setting'},scen.setting),el('p',{},scen.tagline),
+   el('div',{class:'scenario-progress'},el('progress',{max:list.length,value:done,'aria-label':scen.title+' progress'}),el('small',{},slots===null&&current!==scen.id?'Checking saves…':where)),
+   el('div',{class:'scenario-actions'},button(progress?'Continue':'Begin',()=>openScenario(scen.id),'primary'),progress?button('Restart',()=>openScenario(scen.id,true),'secondary'):null));
+ });
+ return el('div',{class:'scenario-screen'},el('header',{class:'scenario-head'},el('div',{class:'eyebrow'},'STARX OPERATIONS . CASE QUEUE'),el('h1',{},'Choose an engagement'),el('p',{class:'muted'},'Each scenario is a separate story with its own save. Your username, theme and settings carry across. Signed in as '+state.username+'.'),el('div',{class:'scenario-tools'},button('← Title',()=>{boot.view='title';render();},'secondary'),button('Settings',settings,'secondary'))),el('div',{class:'scenario-grid'},cards));
+}
+function introScreen(){
+ const scen=scenarios.find(x=>x.id===scenarioOf(state.missionId));
+ const begin=()=>{boot.view='game';chapterCard=state.missionId;render();};
+ const lines=scen.intro.map((t,i)=>el('p',{class:'intro-line',style:'animation-delay:'+(i*1.8+.4)+'s'},personalize(t,state.username)));
+ return el('div',{class:'intro-screen',onKeydown:e=>{if(e.key==='Escape')begin();}},el('div',{class:'intro-card'},el('div',{class:'eyebrow'},scen.setting.toUpperCase()),el('h1',{class:'intro-title'},scen.title),lines,el('div',{class:'intro-actions'},el('button',{type:'button',class:'primary intro-begin',onClick:begin},'Begin'),el('small',{},'Esc skips'))));
+}
+function showChapterCard(){
+ const m=missionById(chapterCard),scen=scenarios.find(x=>x.id===m.scenario);chapterCard=null;
+ const d=el('dialog',{class:'chapter-card','aria-labelledby':'chapter-title'},el('div',{class:'eyebrow'},m.chapter+' . '+scen.title.toUpperCase()),el('h2',{id:'chapter-title'},m.title),el('p',{},m.summary),el('p',{class:'muted'},m.client+' . '+longDate(clock(m,0))),button('Begin',()=>d.close(),'primary'));
+ document.body.append(d);d.addEventListener('close',()=>{d.remove();document.querySelector('#command')?.focus();});d.showModal();d.querySelector('button')?.focus();
 }
 function finalPanel(){
- if(!state.ending)return el('section',{class:'ending-panel'},el('div',{class:'eyebrow'},'YOUR FINAL DECISION'),el('h3',{},'What happens to the truth?'),el('p',{},'Your earlier reports and service disruptions shape the epilogue. The selected ending is saved; replay the finale to explore another.'),endingsFor(scenarioOf(state.missionId)).map(e=>button(e.title+' · '+e.summary,()=>{try{state=chooseEnding(state,e.id);persist();render();}catch(err){notice(err.message);}},'choice')));
+ if(!state.ending)return el('section',{class:'ending-panel'},el('div',{class:'eyebrow'},'YOUR FINAL DECISION'),el('h3',{},'What happens to the truth?'),el('p',{},'Your earlier reports and service disruptions shape the epilogue. The selected ending is saved; replay the finale to explore another.'),endingsFor(scenarioOf(state.missionId)).map(e=>{const open=storyMatch(state,e.requires);const b=button([e.title+' · '+e.summary,open?null:el('small',{class:'locked-note'},' LOCKED: '+e.requiresText)],()=>{try{state=chooseEnding(state,e.id);persist();render();}catch(err){notice(err.message);}},'choice'+(open?'':' locked'));b.disabled=!open;return b;}));
  const end=endingText(state);
- return el('section',{class:'ending-panel'},el('div',{class:'eyebrow'},'CAMPAIGN COMPLETE'),el('h2',{},end.title),end.text.map(t=>el('p',{},t)),el('p',{class:'feedback'},'Recorded case average: '+end.average+'/100. Service interruptions: '+end.outages+'. Legacy cases without archived scores are excluded.'),button('Export campaign record',exportCampaign,'primary'),el('h3',{},'Credits'),el('p',{},'ProfessorGito. An original fictional StarX investigation. Thank you for following the evidence.'),button('Start a new campaign',newCampaign,'secondary'));
+ return el('section',{class:'ending-panel'},el('div',{class:'eyebrow'},'CAMPAIGN COMPLETE'),el('h2',{},end.title),end.text.map(t=>el('p',{},t)),el('p',{class:'feedback'},'Recorded case average: '+end.average+'/100. Service interruptions: '+end.outages+'. Legacy cases without archived scores are excluded.'),button('Export campaign record',exportCampaign,'primary'),el('h3',{},'Credits'),el('p',{},'ProfessorGito. Original fictional investigations. Every person, company and system in them is invented. Thank you for following the evidence.'),button('Start a new campaign',newCampaign,'secondary'),button('Choose another scenario',openScenarios,'secondary'));
 }
 function exportCampaign(){
  const lines=['ProfessorGito / campaign record','Operator: '+state.username,'Ending: '+(state.ending?endingText(state).title:'Not chosen'),''];
@@ -94,7 +130,7 @@ function exportCampaign(){
  if(state.ending)lines.push('',...endingText(state).text);
  const url=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));el('a',{href:url,download:'professor-gito-campaign.txt'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-function newCampaign(){if(confirm('Start over? Export your save first to retain this campaign. Your username and preferences will be kept.')){const scen=scenarios.find(s=>s.id===scenarioOf(state.missionId))||scenarios[0];changeCase(freshState(scen.firstMission,[],{username:state.username,profileSet:state.profileSet,preferences:state.preferences}));}}
+function newCampaign(){if(confirm('Restart this scenario? Export your save first to keep this run. Other scenarios, your username and your preferences are kept.')){const scen=scenarios.find(s=>s.id===scenarioOf(state.missionId))||scenarios[0];boot.view='intro';changeCase(freshState(scen.firstMission,[],{username:state.username,profileSet:state.profileSet,preferences:state.preferences}));}}
 function checkpointsDialog(){
  const d=el('dialog',{class:'settings-dialog','aria-label':'Checkpoints'});
  const list=el('div',{class:'checkpoint-list'});
@@ -133,12 +169,12 @@ function settings(){
   state.preferences.difficulty=id;persist();render();
   d.querySelectorAll('[data-difficulty-choice]').forEach(b=>b.setAttribute('aria-pressed',String(b.getAttribute('data-difficulty-choice')===id)));
  }},el('strong',{},name),el('small',{},desc))));
- d.append(el('h2',{},'Workspace settings'),el('h3',{class:'theme-legend'},'Color theme'),themeGrid,current,el('label',{},'Text size ',size),el('label',{},contrast,' High contrast'),el('label',{},sound,' Sound effects (optional)'),el('label',{},ambience,' Ambient sound (optional)'),el('label',{},'Audio volume ',volume),el('h3',{class:'theme-legend'},'Difficulty'),difficultyGrid,el('p',{},'All gameplay is keyboard accessible. Essential information is text; sound is optional and off by default. Settings are included in your save.'),button('Change username',()=>{d.close();profileDialog();},'secondary'),button('Checkpoints',()=>{d.close();checkpointsDialog();},'secondary'),button('New campaign',()=>{d.close();newCampaign();},'secondary'),button('Close',()=>{d.close();d.remove();},'primary'));document.body.append(d);d.showModal();d.addEventListener('close',()=>d.remove());
+ d.append(el('h2',{},'Workspace settings'),el('h3',{class:'theme-legend'},'Color theme'),themeGrid,current,el('label',{},'Text size ',size),el('label',{},contrast,' High contrast'),el('label',{},sound,' Sound effects (optional)'),el('label',{},ambience,' Ambient sound (optional)'),el('label',{},'Audio volume ',volume),el('h3',{class:'theme-legend'},'Difficulty'),difficultyGrid,el('p',{},'All gameplay is keyboard accessible. Essential information is text; sound is optional and off by default. Settings are included in your save.'),button('Change username',()=>{d.close();profileDialog();},'secondary'),button('Checkpoints',()=>{d.close();checkpointsDialog();},'secondary'),button('Restart this scenario',()=>{d.close();newCampaign();},'secondary'),button('Close',()=>{d.close();d.remove();},'primary'));document.body.append(d);d.showModal();d.addEventListener('close',()=>d.remove());
 }
 function reportPanel(m){
  if(state.report){const r=state.report;return el('div',{class:'report-result'},el('div',{class:'eyebrow'},'CASE CLOSED'),el('div',{class:'score'},r.score,el('small',{},' / 100')),el('h3',{},r.score>=85?'A supported conclusion':'A case to learn from'),el('p',{},m.debrief),el('dl',{class:'score-parts'},Object.entries(r.parts).map(([k,v])=>[el('dt',{},k),el('dd',{},v)])),r.parts.finding===0?el('p',{class:'warning'},'The finding was incorrect or lacked full corroboration.'):null,
  el('h3',{},'One more question'),el('p',{},m.transfer.question),m.transfer.choices.map((text,i)=>button(text,()=>{transferAnswer=i;render();},'choice '+(transferAnswer===i?'selected':''))),transferAnswer!==null?el('p',{class:'feedback'},(transferAnswer===m.transfer.correct?'Correct. ':'Reconsider. ')+m.transfer.explanation):null,
- m.next?button('Continue to next case →',()=>changeCase(nextCase(state)),'primary'):finalPanel(),button('Retry this case',()=>{if(confirm('Restart this case? Your completed-case history is retained.'))changeCase(replayCase(state,m.id));},'secondary'));
+ m.next?button('Continue to next chapter →',()=>{chapterCard=m.next;changeCase(nextCase(state));},'primary'):finalPanel(),button('Retry this case',()=>{if(confirm('Restart this case? Your completed-case history is retained.'))changeCase(replayCase(state,m.id));},'secondary'));
  }
  const form=el('form',{class:'report-form'});const select=el('select',{'aria-label':'Finding',required:true},el('option',{value:''},'Select a supported finding'),m.findings.map(f=>el('option',{value:f.id},f.label)));select.value=reportDraft.finding;select.onchange=()=>reportDraft.finding=select.value;
  const error=el('p',{role:'alert',class:'warning'});
@@ -173,11 +209,11 @@ function messagesPanel(m){
  const msgs=messagesFor(state);
  return el('div',{class:'messages-panel'},msgs.map(msg=>{
   const read=state.readMessages.includes(msg.id);
-  return el('article',{class:'evidence-card message-card'},el('div',{class:'eyebrow'},msg.from+(read?' / READ':' / NEW')),el('h3',{},msg.subject),el('p',{},personalize(msg.text,state.username)),read?null:button('Mark read',()=>{state.readMessages.push(msg.id);persist();render();},'secondary'));
+  return el('article',{class:'evidence-card message-card'},el('div',{class:'eyebrow'},(msg.chat?'CHAT / ':'MAIL / ')+msg.from+(read?' / READ':' / NEW')),el('h3',{},msg.subject),el('p',{},personalize(msg.text,state.username)),read?null:button('Mark read',()=>{state.readMessages.push(msg.id);persist();render();},'secondary'));
  }));
 }
 function networkMap(m){
- const edges=connections[m.id]||[];
+ const edges=connections[m.id]||m.links||[];
  const response=state.action?m.actions.find(a=>a.id===state.action):null;
  return el('section',{},el('p',{class:'muted'},'A case relationship map, not a live network scan. Read scope, then select an authorized host to connect.'),graph(m.nodes.map(n=>({id:n.id,status:m.initialScope.includes(n.id)?(state.node===n.id?'CONNECTED':'AUTHORIZED'):'OUT OF SCOPE',locked:!m.initialScope.includes(n.id),active:state.node===n.id,ariaLabel:'Connect to '+n.label})),edges,{label:'Case host relationships',onSelect:id=>run('connect '+id)}),edges.length?el('ul',{class:'relationship-list'},edges.map(e=>el('li',{},e.from+' → '+e.to+': '+e.label))):el('p',{class:'muted'},'Single-host training environment.'),response?el('p',{class:'feedback'},'Response: '+response.impact):null,el('div',{class:'host-details'},m.nodes.map(n=>el('article',{class:'evidence-card'},el('strong',{},n.label),el('p',{},n.address+' / '+n.role)))));
 }
@@ -190,7 +226,7 @@ function panel(m){
  if(activeTab==='messages')return messagesPanel(m);
  if(activeTab==='map')return networkMap(m);
  if(activeTab==='timeline')return el('div',{class:'timeline'},state.events.length?state.events.map(e=>el('article',{},el('small',{},'STEP '+String(e.tick).padStart(2,'0')),el('p',{},e.text))):el('p',{class:'muted'},'Nothing recorded yet.'));
- if(activeTab==='brief')return el('div',{},el('p',{class:'brief-text'},personalize(m.brief,state.username)),m.puzzle?el('p',{class:'feedback'},m.puzzle.prompt):null,el('h3',{class:'responses-title'},'Response actions'),m.actions.map(a=>el('article',{class:'evidence-card'},el('strong',{},a.label),el('p',{},a.impact),el('code',{},'respond '+a.id))));
+ if(activeTab==='brief')return el('div',{},el('p',{class:'brief-text'},personalize(m.brief,state.username)),m.puzzle?el('p',{class:'feedback'},m.puzzle.prompt):null,el('h3',{class:'responses-title'},'Response actions'),m.actions.filter(a=>storyMatch(state,a.when)).map(a=>el('article',{class:'evidence-card'},el('strong',{},a.label),el('p',{},a.impact),el('code',{},'respond '+a.id))));
  const records=evidenceRecords(m).filter(f=>state.evidence.includes(f.id));
  return el('div',{},records.length?el('div',{class:'panel-intro'},el('span',{class:'count'},records.length+'/'+evidenceRecords(m).length+' PRESERVED')):null,records.length?records.map(f=>el('article',{class:'evidence-card'},el('div',{class:'eyebrow'},f.id+' / '+f.time),el('h3',{},f.title),el('p',{},personalize(f.text,state.username)),el('code',{},f.node+':'+f.path))):el('div',{class:'empty'},el('div',{class:'empty-icon'},emptyIcon()),el('h3',{},'Nothing preserved yet.'),el('p',{},'Read a record with cat, then collect <id>.'),button('Show a hint',()=>run('hint'),'secondary')));
 }
@@ -222,10 +258,9 @@ function startMatrixRain(canvas){
 }
 function titleScreen(){
  const started=state.profileSet||state.completed.length||state.tick>0||state.transcript.length>1;
- const start=()=>{boot.view='game';render();document.querySelector('#command')?.focus();};
- const scen=scenarios.find(s=>s.id===scenarioOf(state.missionId));
- const canvas=el('canvas',{class:'title-rain','aria-hidden':true});
- return el('div',{class:'title-screen'},canvas,el('nav',{class:'title-menu'},button('About Game',aboutDialog,'title-menu-link')),el('main',{class:'title-card'},el('div',{class:'title-mark','aria-hidden':'true'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('h1',{class:'title-logo'},'Professor',el('span',{class:'title-gito'},'Gito')),el('p',{class:'title-tag'},scen?.tagline||'A terminal investigation thriller.'),el('button',{type:'button',class:'primary title-btn',onClick:start},started?'Continue':'New investigation'),started?button('Start a new campaign',()=>{if(confirm('Start over? Export your save first to retain this campaign. Your username and preferences will be kept.')){boot.view='game';newCampaign();}},'title-alt'):el('p',{class:'title-note muted'},'Pick a username, then investigate by typing commands. Progress saves automatically on this browser.')));
+ const start=openScenarios;
+const canvas=el('canvas',{class:'title-rain','aria-hidden':true});
+ return el('div',{class:'title-screen'},canvas,el('nav',{class:'title-menu'},button('About Game',aboutDialog,'title-menu-link')),el('main',{class:'title-card'},el('div',{class:'title-mark','aria-hidden':'true'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('h1',{class:'title-logo'},'Professor',el('span',{class:'title-gito'},'Gito')),el('p',{class:'title-tag'},'A terminal investigation thriller. Five investigations that do not stay small.'),el('button',{type:'button',class:'primary title-btn',onClick:start},started?'Continue':'New investigation'),el('p',{class:'title-note muted'},started?'Five scenarios, each with its own save. Pick up where you left off or start another.':'Pick a scenario, then investigate by typing commands. Progress saves automatically on this browser.')));
 }
 function render(){
  applyTheme(state.preferences);
@@ -242,27 +277,29 @@ function render(){
  if(oldCommand&&!resetTerminal&& !followTerminal)commandDraft=oldCommand.value;
  resetTerminal=false;followTerminal=false;
  applyTheme(state.preferences);audio.configure(state.preferences);
+ if(boot.view==='scenarios'){app.replaceChildren(scenarioScreen());if(!app.contains(document.activeElement))app.querySelector('.scenario-card.current .primary, .scenario-card .primary')?.focus();return;}
+ if(boot.view==='intro'){app.replaceChildren(introScreen());app.querySelector('.intro-begin')?.focus();return;}
  if(boot.view!=='game'){app.replaceChildren(titleScreen());app.querySelector('.title-btn')?.focus();startMatrixRain(app.querySelector('.title-rain'));return;}
  const m=missionById(state.missionId),done=m.objectives.filter(o=>objectiveDone(state,o)).length;
  const file=el('input',{type:'file',accept:'.json,application/json',hidden:true,'aria-label':'Import save file',onChange:e=>importSave(e.target.files[0])});
  const saveMenu=el('details',{class:'save-menu'},el('summary',{},'Save & restore'),el('div',{class:'save-menu-items'},button('Checkpoints',()=>{saveMenu.open=false;checkpointsDialog();}),button('Export save',()=>{saveMenu.open=false;exportSave();}),button('Import save',()=>{saveMenu.open=false;file.click();})));
  const sidebarToggle=el('button',{type:'button',id:'sidebar-toggle','aria-expanded':sidebarOpen,'aria-label':sidebarOpen?'Hide case files':'Show case files',onClick:toggleSidebar},'☰');
- const header=el('header',{class:'topbar'},el('div',{class:'brand-group'},sidebarToggle,el('a',{class:'brand',href:'#',onClick:e=>e.preventDefault()},el('span',{class:'brand-mark'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('span',{},'ProfessorGito',el('small',{},'STARX / INVESTIGATION WORKSPACE')))),el('div',{class:'top-actions'},saveMenu,button('Settings',settings),file));
+ const header=el('header',{class:'topbar'},el('div',{class:'brand-group'},sidebarToggle,el('a',{class:'brand',href:'#',onClick:e=>e.preventDefault()},el('span',{class:'brand-mark'},el('img',{src:'./public/logo.png',alt:'','aria-hidden':true})),el('span',{},'ProfessorGito',el('small',{},'STARX / INVESTIGATION WORKSPACE')))),el('div',{class:'top-actions'},button('Scenarios',openScenarios),saveMenu,button('Settings',settings),file));
  const activeScenario=scenarioOf(state.missionId),sidebarCampaign=campaignFor(activeScenario);
  const sidebar=sidebarOpen?el('aside',{class:'sidebar'},el('div',{class:'eyebrow'},'OPERATIONS DESK'),el('h2',{},scenarios.find(s=>s.id===activeScenario)?.title||'Case files'),el('nav',{'aria-label':'Campaign'},sidebarCampaign.map((c,i)=>{const available=c.status==='playable'&&(i===0||state.completed.includes(sidebarCampaign[i-1].id)||state.completed.includes(c.id)||c.id===state.missionId);const done=state.completed.includes(c.id),tag=c.id===state.missionId?(state.report?'DONE':'NOW'):done?'DONE':available?'':'LOCKED';return button([el('span',{class:'case-top'},el('span',{class:'case-number'},String(i+1).padStart(2,'0')),el('strong',{class:'case-name'},c.title)),tag?el('span',{class:'case-tag'+(tag==='LOCKED'?' locked':'')},tag):null],()=>{if(c.id===state.missionId)return;if(confirm('Open this case from the beginning? Export your save first if you want to keep this attempt.'))changeCase(replayCase(state,c.id));},'case '+(c.id===state.missionId?'active':'')+(available?'':' locked'));}))):null;
  // Disable unavailable campaign entries without hiding their content slots.
  if(sidebar){[...sidebar.querySelectorAll('.locked')].forEach(b=>b.disabled=true);sidebar.querySelector('.case.active')?.setAttribute('aria-current','step');}
  const input=el('input',{id:'command',name:'command',autocomplete:'off',spellcheck:'false','aria-label':'Terminal command',placeholder:'',value:commandDraft,maxlength:2048,onInput:e=>{commandDraft=e.target.value;}});
- input.onkeydown=e=>{if(e.key==='ArrowUp'){e.preventDefault();if(historyIndex===history.length)historyDraft=input.value;historyIndex=Math.max(0,historyIndex-1);input.value=history[historyIndex]||'';}if(e.key==='ArrowDown'){e.preventDefault();historyIndex=Math.min(history.length,historyIndex+1);input.value=history[historyIndex]??historyDraft;}if(e.key==='Tab'&&input.value&&!input.value.includes(' ')){const matches=commands.filter(c=>c.startsWith(input.value));if(matches.length===1){e.preventDefault();input.value=matches[0]+' ';}}};
- const promptLine=el('form',{class:'command-form line input',onSubmit:e=>{e.preventDefault();run(input.value);}},el('span',{class:'live-prompt','aria-hidden':true},state.username+'@'+(state.node||'starx')+':'+state.cwd+'$ '),input);
- const terminalLog=el('div',{class:'terminal-log',id:'terminal-log',role:'log','aria-label':'Terminal transcript',tabindex:0,onClick:()=>{if(window.getSelection().isCollapsed)input.focus();}},[...state.transcript.map(t=>el('pre',{class:'line '+t.kind},t.kind==='input'?state.username+'@starx:$ '+t.text:personalize(t.text,state.username))),promptLine]);
+ input.onkeydown=e=>{if(e.key==='ArrowUp'){e.preventDefault();if(historyIndex===history.length)historyDraft=input.value;historyIndex=Math.max(0,historyIndex-1);input.value=history[historyIndex]||'';}if(e.key==='ArrowDown'){e.preventDefault();historyIndex=Math.min(history.length,historyIndex+1);input.value=history[historyIndex]??historyDraft;}if(e.key==='Tab'&&input.value){e.preventDefault();const c=complete(state,input.value);input.value=c.value;commandDraft=c.value;const hint=document.querySelector('#completions');if(hint)hint.textContent=c.options.length?c.options.join('   '):'';}};
+ const promptLine=el('form',{class:'command-form line input',onSubmit:e=>{e.preventDefault();run(input.value);}},el('span',{class:'live-prompt','aria-hidden':true},state.username+'@'+(state.node||'starx')+':'+state.cwd+'$ '),input);const completions=el('div',{id:'completions',class:'completions','aria-live':'polite'});
+ const terminalLog=el('div',{class:'terminal-log',id:'terminal-log',role:'log','aria-label':'Terminal transcript',tabindex:0,onClick:()=>{if(window.getSelection().isCollapsed)input.focus();}},[...state.transcript.map(t=>el('pre',{class:'line '+t.kind+(t.kind==='system'&&t.text.startsWith('[MAIL]')?' notice mail':t.kind==='system'&&t.text.startsWith('<')?' notice chat':'')},t.kind==='input'?(t.prompt||state.username+'@starx:$')+' '+t.text:personalize(t.text,state.username))),promptLine,completions]);
  const expert=state.preferences.difficulty==='expert',guided=state.preferences.difficulty==='guided';
- const shortcutIds=guided?['help','brief','scope','scan','ls','actions','hint','status']:['help','scope','scan','ls','actions','hint'];
+ const shortcutIds=guided?['help','brief','scope','nmap','ls -la','mail','actions','hint','status']:['help','scope','nmap','ls -la','mail','actions','hint'];
  const focusButton=el('button',{type:'button',id:'focus-toggle','aria-pressed':focusMode,onClick:toggleFocus},focusMode?'Exit focus':'Focus mode');
  const latest=button('↓ Latest output',()=>{terminalLog.scrollTop=terminalLog.scrollHeight;},'latest-output');
  const updateLatest=()=>{latest.hidden=terminalLog.scrollHeight-terminalLog.scrollTop-terminalLog.clientHeight<40;};
  terminalLog.addEventListener('scroll',updateLatest,{passive:true});
- const terminal=el('section',{class:'terminal','aria-label':'Simulated terminal'},el('div',{class:'terminal-title'},el('span',{class:'terminal-dot','aria-hidden':'true'}),el('span',{class:'terminal-name'},'STARX SHELL'),el('div',{class:'terminal-tools'},button('Commands',commandGuide),focusButton)),el('div',{class:'terminal-body'},terminalLog,latest),expert?null:el('div',{class:'terminal-bottom'},el('div',{class:'terminal-shortcuts'},shortcutIds.map(c=>button(c,()=>run(c))))));
+ const terminal=el('section',{class:'terminal','aria-label':'Simulated terminal'},el('div',{class:'terminal-title'},el('span',{class:'terminal-dot','aria-hidden':'true'}),el('span',{class:'terminal-name'},'STARX SHELL . '+(state.node?state.node+' '+m.nodes.find(n=>n.id===state.node).address:'local')+' . '+longDate(clock(m,state.tick)).slice(4,16)),el('div',{class:'terminal-tools'},button('Commands',commandGuide),focusButton)),el('div',{class:'terminal-body'},terminalLog,latest),expert?null:el('div',{class:'terminal-bottom'},el('div',{class:'terminal-shortcuts'},shortcutIds.map(c=>button(c,()=>run(c))))));
  const tabLabels={evidence:'Evidence ('+state.evidence.length+')',brief:'Brief',map:'Map',board:'Board',practice:'Practice',messages:'Inbox ('+messagesFor(state).filter(m=>!state.readMessages.includes(m.id)).length+')',timeline:'Timeline',report:'Report',record:'Campaign'};
  const tabs=el('div',{class:'tabs',role:'tablist','aria-label':'Case panels'},TAB_IDS.map(id=>el('button',{type:'button',role:'tab',id:'tab-'+id,'aria-controls':'case-panel','aria-selected':activeTab===id,tabindex:activeTab===id?0:-1,onKeydown:e=>{let target=null;if(e.key==='ArrowRight')target=TAB_IDS[(TAB_IDS.indexOf(id)+1)%TAB_IDS.length];if(e.key==='ArrowLeft')target=TAB_IDS[(TAB_IDS.indexOf(id)+TAB_IDS.length-1)%TAB_IDS.length];if(e.key==='ArrowDown')target=TAB_IDS[(TAB_IDS.indexOf(id)+3)%TAB_IDS.length];if(e.key==='ArrowUp')target=TAB_IDS[(TAB_IDS.indexOf(id)+TAB_IDS.length-3)%TAB_IDS.length];if(e.key==='Home')target=TAB_IDS[0];if(e.key==='End')target=TAB_IDS.at(-1);if(target){e.preventDefault();activeTab=target;render();document.querySelector('#tab-'+target)?.focus();}},class:activeTab===id?'selected':'',onClick:()=>{activeTab=id;render();document.querySelector('#tab-'+id)?.focus();}},tabLabels[id])));
  const suggestion=nextGuidedStep(state,m);
@@ -271,6 +308,7 @@ function render(){
  app.replaceChildren(header,el('div',{class:'layout'+(focusMode?' focus-mode':'')+(sidebarOpen?'':' sidebar-collapsed')},sidebar,workspace));
  if(bootError){const alert=el('div',{class:'boot-warning',role:'alert'},bootError,button('Dismiss',()=>{bootError=null;render();}));workspace.prepend(alert);}
  document.querySelector('#case-panel').scrollTop=panelScroll[activeTab]||0;renderedTab=activeTab;
+ if(chapterCard&&!document.querySelector('dialog[open]'))showChapterCard();
  if(focusedId){const replacement=document.getElementById(focusedId);replacement?.focus({preventScroll:true});if(selection!=null&&replacement?.setSelectionRange)replacement.setSelectionRange(selection,selection);}
  terminalLog.scrollTop=follow?terminalLog.scrollHeight:oldScroll;updateLatest();}
 try{const saved=await loadLocal();if(saved){state=saved.state;status=saved.recovered?'Recovered previous valid save':'Local save restored';}else status='New workspace · progress saves automatically';}catch(e){bootError=e.message+' Use Export save to keep a portable copy.';status='Local save unavailable';}

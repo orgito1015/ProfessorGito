@@ -175,3 +175,27 @@ All three choices are available after legitimate campaign progression. Their epi
 - Finale: preserve, review, release.
 
 Practice completion is independent of the report score. Before trying a different response, use the automatic checkpoint from the Checkpoints dialog. Named checkpoints can be exported individually for backup.
+
+## Code Grey
+
+Chapter 1: `scope`, `ssh fileshare`, `cat /var/log/audit/file-events.log`, `collect renames`, `ssh edr`, `cat /alerts/overnight.txt`, `collect alerts`, `cat /hosts/WS-WARD2-03/process-tree.txt`, `collect proctree`, `ssh clinmon`, `cat /status/clinical.txt`, `collect pumps`, `solve ws-ward2-03`, `ssh edr`, `respond isolate-endpoints`, `verify`. Finding: macro and cached deployment account.
+
+Chapter 2: `ssh backup`, `cat /var/log/backup/jobs.log`, `collect jobs`, `request-scope`, collect `vpnlog` (vpn `/var/log/vpn/auth.log`) and `dcaudit` (dc-audit `/audit/privileged-changes.log`), `solve m.lind`, `respond protect-backups` on backup. Read `/etc/vpn/mfa-exemptions.conf` to unlock the Protect Tomasz ending. Choosing `rotate-only` removes the fast restore in the finale.
+
+Finale: collect demand, proof, egress, plan, notify; `solve 2.1gb`; `respond restore-online` on recovery. Finding: inflated claim.
+
+## The Quiet Partner
+
+Chapter 1: collect dlpalert, signins, devices, exit; `solve hv-ws-0007`; `respond suspend-sessions` on signin.
+
+Chapter 2: collect rule, `request-scope`, collect fwdcount, browser (ws7), trades; `solve kestrel.notes@fastmail-alt.example`; `respond disable-rule` on journal. Read `/Users/blindgren/AppData/chat-cache/c.vale.txt` on ws7 (before any confrontation) to unlock Whistleblower.
+
+Finale: collect package, recipients, policy, options; `solve 23`; `respond audit-committee` on hold.
+
+## Open Book
+
+Chapter 1: collect report, acl, objects, chg; `solve chg-2210`; `respond make-private` on storage.
+
+Chapter 2: collect access, `request-scope`, collect ipinfo, dpa; `solve 203.0.113.140`; `respond preserve-and-request` on dpo. Read `/notes/archive/listright-catalog-0906.txt` on intel-notes to unlock Follow the Money.
+
+Finale: collect draft, affected, sam-post, regulator; `solve 18904`; `respond honest-notice` on dpo-desk.

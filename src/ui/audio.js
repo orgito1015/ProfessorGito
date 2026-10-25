@@ -12,10 +12,12 @@ export class AudioBus {
    return true;
   }catch{return false;}
  }
- async cue(){
+ // Distinct short cues: a click for progress, a rising pair for new mail, a low buzz for errors.
+ async cue(kind='event'){
   if(!this.preferences.sound||this.hidden||!this.preferences.volume)return;
   if(!await this.configure(this.preferences,true)||!this.ctx)return;
-  try{const o=this.ctx.createOscillator(),g=this.ctx.createGain(),t=this.ctx.currentTime;o.frequency.value=660;o.connect(g);g.connect(this.ctx.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(this.preferences.volume/100*.08,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.1);o.start(t);o.stop(t+.12);o.onended=()=>{o.disconnect();g.disconnect();};}catch{/* sound is optional */}
+  const tones={event:[660],mail:[880,1320],error:[196]}[kind]||[660];
+  try{tones.forEach((f,i)=>{const o=this.ctx.createOscillator(),g=this.ctx.createGain(),t=this.ctx.currentTime+i*.09;if(kind==='error')o.type='square';o.frequency.value=f;o.connect(g);g.connect(this.ctx.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(this.preferences.volume/100*(kind==='error'?.04:.08),t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.1);o.start(t);o.stop(t+.12);o.onended=()=>{o.disconnect();g.disconnect();};});}catch{/* sound is optional */}
  }
  setHidden(hidden){this.hidden=hidden;return this.configure(this.preferences);}
  close(){for(const o of this.oscillators){try{o.stop();o.disconnect();}catch{}}this.oscillators=[];this.hum=null;const c=this.ctx;this.ctx=null;return c?.close().catch(()=>{});}

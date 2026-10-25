@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.0 - Scenarios
+
+- Scenario selection after Start/Continue, with a separate save slot per scenario. The existing `current` save still loads and older saves default the new `intel` field.
+- Three new three-chapter scenarios with intros, characters, choice-dependent files, responses, epilogues and locked endings: Code Grey, The Quiet Partner, Open Book.
+- Story event system: authored mail and chat triggered by reads, evidence, deductions, responses, verification and elapsed steps, shown in the terminal and the Inbox. `mail` reads and marks messages.
+- Intro sequences and chapter title cards.
+- Realistic shell: ssh/exit, nmap, ls -la/-R, head, tail, grep, find, wc, sha256sum, ps, netstat, history, man, xxd, date, uname, id; realistic errors; login banners; recorded prompts; path and host tab completion; collect by path; digests on collect.
+- Distinct sound cues for mail and errors; scanline layer on the terminal.
+- Fixed Signal Zero crashing the workspace (missing inbox story) and its endings never reaching the strong outcome.
+- 94 automated tests pass, including a full play-through of every scenario and branching checks.
+
 ## 1.3.0 - Comfortable workspace
 
 - Rebalanced the desktop layout around a larger terminal and organized notebook tabs.

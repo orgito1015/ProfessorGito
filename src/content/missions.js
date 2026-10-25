@@ -1,6 +1,10 @@
 // Data only. Stable IDs are part of the save-file contract.
 const record = (id, path, title, text, time = '08:00:00') => ({ id, path, title, text, time });
+import * as codeGrey from './scenarios/code-grey.js';
+import * as quietPartner from './scenarios/quiet-partner.js';
+import * as openBook from './scenarios/open-book.js';
 export const CONTENT_VERSION = 2;
+export const scenarioEndings = {'code-grey':codeGrey.endings,'quiet-partner':quietPartner.endings,'open-book':openBook.endings};
 export const missions = [
  { id:'cold-boot', scenario:'cinder-prime', title:'Cold Boot', chapter:'PROLOGUE', client:'StarX', minutes:'5–8',
    summary:'Your first morning at StarX. Iva has left a small puzzle in the training environment.',
@@ -1123,10 +1127,17 @@ export const missions = [
     "explanation": "Report what the sample actually shows and what the access path actually shows as two separate, evidence-backed claims."
   }
 }
+,
+...codeGrey.missions, ...quietPartner.missions, ...openBook.missions
 ];
 export const scenarios = [
- {id:'cinder-prime',title:'StarX Investigation',tagline:'Seven cases. A quiet vendor problem becomes a cross-client intrusion.',firstMission:'cold-boot',endMission:'null-route'},
- {id:'cinder-shadow',title:'Signal Zero',tagline:'',firstMission:'token-break',endMission:'null-signal'}
+ {id:'cinder-prime',title:'StarX Investigation',tagline:'Seven cases. A quiet vendor problem becomes a cross-client intrusion.',setting:'StarX Operations . Monday, 08:00',difficulty:'Introductory to advanced',firstMission:'cold-boot',endMission:'null-route',
+  intro:['Monday, 08:00. Your first morning at StarX, a small security consultancy that takes the cases bigger firms find too messy.','Your mentor, Iva Marlow, has left a sticky note on your monitor: "Evidence before certainty. Start with help."','The workstation boots into the StarX shell. Somewhere in the queue is a bakery, a freight company and a vendor nobody suspects yet.','"{username}," the note ends. "Read your scope. Then read everything else."'],
+  coda:'TALLOW was the label for the activity, not proof of a person. You exposed its access path and gave the clients a choice. The rest belongs to the people responsible for the investigation.'},
+ {id:'cinder-shadow',title:'Signal Zero',tagline:'Three hard cases at a bank: a stolen session, a tunnel that will not die, and an extortion demand that overreaches.',setting:'Meridian Trust . Wednesday, 09:16',difficulty:'Advanced',firstMission:'token-break',endMission:'null-signal',
+  intro:['Wednesday, 09:16. Meridian Trust\'s security team flags an admin session that should not exist.','The real admin signed in two minutes earlier, from headquarters, with MFA. The second session came from somewhere else entirely.','A release train is mid-deployment. Nobody wants to stop it without cause.','Iva Marlow sends you one line: "{username}, this one is fast and quiet. Do not make it loud."'],
+  coda:'COLDRELAY was the label StarX used for the activity cluster, not proof of a person. You closed its access path and corrected an inflated claim. The rest belongs to the people responsible for the investigation.'},
+ codeGrey.scenario, quietPartner.scenario, openBook.scenario
 ];
 export function missionsFor(scenarioId){ return missions.filter(m=>m.scenario===scenarioId); }
 export function campaignFor(scenarioId){ return missionsFor(scenarioId).map(m=>({id:m.id,title:m.title,status:'playable'})); }
