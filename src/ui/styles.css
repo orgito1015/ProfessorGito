@@ -104,13 +104,6 @@ footer{font-size:.68rem;padding-top:16px;line-height:1.7}
 .welcome-screen{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
 .welcome-card{max-width:480px;width:100%;text-align:center}
 .welcome-card .brand-mark{margin:0 auto 18px;width:56px;height:56px}
-.welcome-subhead{margin-top:26px;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left}
-.mission-grid{display:grid;gap:10px;margin-top:10px}
-.mission-choice{display:block;width:100%;text-align:left;padding:14px 16px;border-radius:10px}
-.mission-choice strong{display:block;font-size:.9rem}
-.mission-choice small{display:block;margin:3px 0 6px;color:var(--muted);font:.68rem var(--mono);letter-spacing:.06em}
-.mission-choice p{margin:0;font-size:.8rem;color:var(--muted);line-height:1.5}
-.mission-choice[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:1px;background:var(--selected)}
 .welcome-form{margin-top:24px;text-align:left}
 .welcome-form label{display:block;font-size:.85rem;margin-bottom:8px}
 .welcome-form input[type=text]{width:100%;padding:12px;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:8px;font-size:1rem}
@@ -158,3 +151,28 @@ footer{font-size:.68rem;padding-top:16px;line-height:1.7}
 .case-tag.locked{color:var(--muted)}
 .terminal-name{font:.62rem var(--mono);letter-spacing:.12em;color:var(--muted)}
 @media(max-width:420px){.title-card{max-width:100%}.case-tag{display:none}}
+/* Scenario selection, intro sequence and chapter cards */
+.scenario-screen{min-height:100dvh;padding:48px 32px;background:var(--bg);max-width:1240px;margin:0 auto}
+.scenario-head h1{margin:8px 0}.scenario-head p{max-width:680px}.scenario-tools{display:flex;gap:8px;margin:18px 0 30px}
+.scenario-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.scenario-card{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;padding:22px;background:var(--panel)}
+.scenario-card.current{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.scenario-card h2{margin:10px 0 4px;font-size:1.35rem}.scenario-card p{font-size:.82rem;color:var(--text)}
+.scenario-setting{font:.68rem var(--mono)!important;color:var(--muted)!important;letter-spacing:.05em}
+.scenario-progress{margin-top:auto;padding-top:10px;display:grid;gap:6px}.scenario-progress progress{width:100%;accent-color:var(--accent)}
+.scenario-actions{display:flex;gap:8px;margin-top:16px}.scenario-actions .primary{flex:1}
+.intro-screen{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:32px 20px;background:#000;color:#d8e3d6}
+.intro-card{max-width:680px;width:100%}.intro-title{font-size:clamp(2rem,6vw,3.4rem);margin:10px 0 28px}
+.intro-line{font:.95rem/1.8 var(--mono);opacity:0;animation:intro-in .9s ease forwards;margin:0 0 18px}
+.intro-actions{display:flex;align-items:center;gap:16px;margin-top:28px}.intro-actions small{color:#8d998b}
+@keyframes intro-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.intro-line{opacity:1}}
+.chapter-card{max-width:520px;width:calc(100% - 32px);border:1px solid var(--accent);border-radius:12px;background:var(--panel);color:var(--text);padding:30px;text-align:center}
+.chapter-card::backdrop{background:rgba(0,0,0,.82)}.chapter-card h2{font-size:1.8rem;margin:10px 0 14px}.chapter-card .primary{margin-top:10px;min-width:160px}
+/* Terminal realism: notices, completion hints and a faint scanline layer */
+.line.notice{border-left:2px solid var(--accent);padding-left:10px}.line.notice.chat{color:var(--text)}.line.notice.mail{color:var(--warning)}
+.completions{font:.7rem var(--mono);color:var(--muted);padding:0 4px 6px;min-height:1em;white-space:pre-wrap}
+.terminal-body{position:relative}.terminal-body::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,transparent 0 2px,rgba(0,0,0,.12) 2px 3px)}
+:root[data-theme=paper] .terminal-body::after,:root[data-contrast=true] .terminal-body::after{display:none}
+.choice.locked{opacity:.6}.locked-note{display:block;color:var(--warning)}
+@media(max-width:640px){.scenario-screen{padding:28px 16px}.scenario-grid{grid-template-columns:1fr}.chapter-card{padding:22px}}

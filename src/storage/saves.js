@@ -1,9 +1,9 @@
-import { exerciseById } from '../content/extras.js';
+import { exerciseById, exercises } from '../content/extras.js';
 import { DEFAULT_THEME, validTheme } from '../ui/themes.js';
 import { normalizeUsername } from '../engine/profile.js';
 import { endingsFor } from '../content/endings.js';
 import { missions, missionById, CONTENT_VERSION, scenarios, missionsFor, scenarioOf } from '../content/missions.js';
-import { evidenceRecords, submitReport } from '../engine/game.js';
+import { evidenceRecords, submitReport, messageIds, intelKeys, storyMatch } from '../engine/game.js';
 export const MAX_SAVE_BYTES=1_000_000;
 const fail=()=>{throw new Error('Invalid or incompatible save. Your current game has not been replaced.');};
 export function validateSave(raw,depth=0){
@@ -54,9 +54,11 @@ export function validateSave(raw,depth=0){
  if(raw.node&&raw.cwd!=='/'&&!m.nodes.find(n=>n.id===raw.node).files.some(f=>f.path.startsWith(raw.cwd+'/')))fail();
  if(!Number.isSafeInteger(raw.tick)||raw.tick<0||raw.tick>1e9||!Number.isInteger(raw.hintLevel)||raw.hintLevel<0||raw.hintLevel>m.hints.length||typeof raw.verified!=='boolean')fail();
  if(!Array.isArray(raw.events)||raw.events.length>150||raw.events.some(e=>!e||!Number.isSafeInteger(e.tick)||e.tick<0||e.tick>raw.tick||typeof e.text!=='string'||e.text.length>4000))fail();
- if(!Array.isArray(raw.transcript)||raw.transcript.length>160||raw.transcript.some(e=>!e||!['system','input','output'].includes(e.kind)||typeof e.text!=='string'||e.text.length>16000))fail();
+ if(!Array.isArray(raw.transcript)||raw.transcript.length>160||raw.transcript.some(e=>!e||!['system','input','output'].includes(e.kind)||typeof e.text!=='string'||e.text.length>16000||e.prompt!==undefined&&(e.kind!=='input'||typeof e.prompt!=='string'||e.prompt.length>200)))fail();
+ const intel=raw.intel===undefined?[]:raw.intel,allowedIntel=intelKeys();
+ if(!strings(intel,allowedIntel.length)||new Set(intel).size!==intel.length||intel.some(k=>!allowedIntel.includes(k)))fail();
  if(raw.flags.includes('puzzle')&&(!m.puzzle||!m.puzzle.requires.every(id=>raw.evidence.includes(id))))fail();
- if(raw.action!==null){const a=m.actions.find(a=>a.id===raw.action);if(!a||!a.required.every(id=>raw.evidence.includes(id))||(m.extension&&!raw.flags.includes('extension'))||(m.puzzle&&!raw.flags.includes('puzzle')))fail();}
+ if(raw.action!==null){const a=m.actions.find(a=>a.id===raw.action);if(!a||!storyMatch({...raw,intel},a.when)||!a.required.every(id=>raw.evidence.includes(id))||(m.extension&&!raw.flags.includes('extension'))||(m.puzzle&&!raw.flags.includes('puzzle')))fail();}
  if(raw.verified&&!raw.action)fail();
  if(raw.flags.includes('extension')&&(!m.extension||!raw.evidence.includes(m.scopeLead)))fail();
  const caseResults={};
@@ -78,17 +80,17 @@ export function validateSave(raw,depth=0){
  if(report.score!==r.score||!raw.completed.includes(m.id)||!caseResults[m.id]||caseResults[m.id].legacy||caseResults[m.id].score!==report.score||caseResults[m.id].action!==raw.action||caseResults[m.id].finding!==report.finding||caseResults[m.id].uncertainty!==report.uncertainty||JSON.stringify(caseResults[m.id].cited)!==JSON.stringify(report.cited))fail();
  }
  const exerciseSolved=raw.exerciseSolved===undefined?[]:raw.exerciseSolved;
- if(!strings(exerciseSolved,7)||new Set(exerciseSolved).size!==exerciseSolved.length||exerciseSolved.some(id=>!exerciseById(id)))fail();
+ if(!strings(exerciseSolved,exercises.length)||new Set(exerciseSolved).size!==exerciseSolved.length||exerciseSolved.some(id=>!exerciseById(id)))fail();
  const readMessages=raw.readMessages===undefined?[]:raw.readMessages;
- const messageIDs=missions.flatMap(m=>['brief','scope','response','verify','report'].map(s=>m.id+':'+s));
- if(!strings(readMessages,35)||new Set(readMessages).size!==readMessages.length||readMessages.some(id=>!messageIDs.includes(id)))fail();
+ const messageIDs=messageIds();
+ if(!strings(readMessages,messageIDs.length)||new Set(readMessages).size!==readMessages.length||readMessages.some(id=>!messageIDs.includes(id)))fail();
  let autoCheckpoint=null;
  if(raw.autoCheckpoint!==undefined&&raw.autoCheckpoint!==null){
   if(depth!==0)fail();autoCheckpoint=validateSave(raw.autoCheckpoint,1);
   if(autoCheckpoint.missionId!==raw.missionId||autoCheckpoint.action!==null||autoCheckpoint.report!==null||autoCheckpoint.tick>raw.tick)fail();
  }
  // Build a clean object; never retain arbitrary imported properties.
- return {version:2,autoCheckpoint,exerciseSolved:[...exerciseSolved],readMessages:[...readMessages],username:raw.username,profileSet:raw.profileSet,preferences:{fontSize:pref.fontSize,contrast:pref.contrast,theme,difficulty,sound,ambience,volume},caseResults,ending:raw.ending,contentVersion:CONTENT_VERSION,missionId:m.id,completed:[...new Set(raw.completed)],node:raw.node,cwd:raw.cwd,flags:[...new Set(raw.flags)],read:[...raw.read],evidence:[...raw.evidence],action:raw.action,verified:raw.verified,report,hintLevel:raw.hintLevel,tick:raw.tick,events:raw.events.map(e=>({tick:e.tick,text:e.text.replaceAll('\u2014',',')})),board,transcript:raw.transcript.map(e=>({kind:e.kind,text:e.text.replaceAll('\u2014',',')}))};
+ return {version:2,autoCheckpoint,exerciseSolved:[...exerciseSolved],readMessages:[...readMessages],intel:[...intel],username:raw.username,profileSet:raw.profileSet,preferences:{fontSize:pref.fontSize,contrast:pref.contrast,theme,difficulty,sound,ambience,volume},caseResults,ending:raw.ending,contentVersion:CONTENT_VERSION,missionId:m.id,completed:[...new Set(raw.completed)],node:raw.node,cwd:raw.cwd,flags:[...new Set(raw.flags)],read:[...raw.read],evidence:[...raw.evidence],action:raw.action,verified:raw.verified,report,hintLevel:raw.hintLevel,tick:raw.tick,events:raw.events.map(e=>({tick:e.tick,text:e.text.replaceAll('\u2014',',')})),board,transcript:raw.transcript.map(e=>e.prompt===undefined?{kind:e.kind,text:e.text.replaceAll('\u2014',',')}:{kind:e.kind,text:e.text.replaceAll('\u2014',','),prompt:e.prompt})};
 }
 export function parseSave(text){if(typeof text!=='string'||new TextEncoder().encode(text).length>MAX_SAVE_BYTES)throw new Error('Save exceeds the 1 MB limit.');let raw;try{raw=JSON.parse(text);}catch{throw new Error('This is not a JSON save file.');}return validateSave(raw);}
 export function serializeSave(state){return JSON.stringify(validateSave(state),null,2);}
@@ -99,7 +101,13 @@ export async function loadLocal(){
 }
 export async function saveLocal(state){
  const text=serializeSave(state),db=await openDB();
- try{await new Promise((resolve,reject)=>{const tx=db.transaction('saves','readwrite'),store=tx.objectStore('saves'),req=store.get('current');req.onsuccess=()=>{if(req.result){try{parseSave(req.result);store.put(req.result,'previous');}catch{/* retain last known good backup */}}store.put(text,'current');};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}finally{db.close();}
+ try{await new Promise((resolve,reject)=>{const tx=db.transaction('saves','readwrite'),store=tx.objectStore('saves'),req=store.get('current');req.onsuccess=()=>{if(req.result){try{parseSave(req.result);store.put(req.result,'previous');}catch{/* retain last known good backup */}}store.put(text,'current');store.put(text,'slot:'+scenarioOf(state.missionId));};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}finally{db.close();}
+}
+// One save per scenario. The 'current' key stays the active game so older builds and saves keep working.
+export async function loadSlots(){
+ const db=await openDB();
+ try{return await new Promise((resolve,reject)=>{const tx=db.transaction('saves','readonly'),store=tx.objectStore('saves'),keys=store.getAllKeys(),values=store.getAll();
+  tx.oncomplete=()=>{const out={};keys.result.forEach((k,i)=>{if(typeof k!=='string'||!(k.startsWith('slot:')||k==='current'))return;try{const st=parseSave(values.result[i]),id=scenarioOf(st.missionId);if(k==='current'||!out[id])out[id]=st;}catch{/* skip damaged slot */}});resolve(out);};tx.onerror=()=>reject(tx.error);});}finally{db.close();}
 }
 const MAX_CHECKPOINTS=12;
 export async function saveCheckpoint(label,state){

@@ -8,8 +8,8 @@ export const aboutContent = [
  {h:'Why it feels different'},
  {p:'Most games about hacking hand you a fake command line as set dressing. ProfessorGito flips that: the terminal is not decoration, it is the whole interface, and the tension comes from reading carefully rather than clicking fast. It plays like a detective story where you are the one doing the detective work, not watching someone else do it for you.'},
  {p:'Your choices also do not disappear at the end of a case. How you respond to an incident, whether you protect a client’s service while containing a threat or knock it offline in the process, shapes the story you are building toward. By the finale, your accumulated decisions steer which of three different endings you get.'},
- {h:'Two cases, growing'},
- {p:'The original campaign is seven cases long, starting small and quietly escalating into something much bigger than any single client realized. For players who want a sharper challenge, a second campaign, Signal Zero, adds three tougher cases built around a harder, more advanced kind of intrusion: an identity attack, a persistence mechanism that will not stay dead, and a demand that is not quite what it claims to be. Pick whichever one you want when you start; both stand on their own.'},
+ {h:'Five scenarios'},
+ {p:'Pick an engagement when you start: the original seven-case StarX Investigation, Signal Zero at a bank, Code Grey during a hospital ransomware night shift, The Quiet Partner at a law firm with a merger to protect, or Open Book at a university whose applicant records were left public. Each has its own story, characters, save and endings, and your choices in early chapters change what happens later.'},
  {h:'Try it'},
  {p:'No install, no account, nothing to download. It runs in your browser and saves your progress locally as you go.'},
  {p:'Follow the evidence. Not the label someone else put on it.'}

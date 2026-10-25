@@ -25,6 +25,9 @@ const stories={
  'supply-chain':['Iva Marlow','A signature is not an approval','The vendor is cooperating. Follow the exact artifact through the build system. I am meeting the support partner while you review the records.'],
  blackout:['Port control','Separate support from safety','Remote telemetry is delayed, but the local safety heartbeat is healthy. Do not mistake recurring legitimate traffic for the intrusion.'],
  inside:['Iva Marlow','Follow the credential','I am safe. The shared token carries my name, but it predates my role. My sealed message tells you which credential links the cases.'],
+ 'token-break':['Meridian SOC','Impossible travel on an admin account','The real admin signed in from headquarters at 09:14. Two minutes later the same token family was redeemed somewhere else. Release R-114 is mid-flight; please do not break it.'],
+ 'living-signal':['Iva Marlow','It came back','The token is revoked, but something on the database host is still talking to the outside through DNS. Find the tunnel. Transactions must keep flowing.'],
+ 'null-signal':['Meridian Trust legal','A demand arrived','Someone claims to hold our entire customer database and wants paying. Before we decide anything, tell us what they actually have.'],
  'null-route':['Joint client response','Your final account','We have authorized a careful handoff. Preserve uncertainty about individuals. You have earned a decision about what happens next, not permission to invent certainty.']
 };
 export function messagesFor(m,state){

@@ -1,4 +1,5 @@
-import { scenarioOf } from './missions.js';
+import { scenarioOf, scenarios, missionsFor, scenarioEndings } from './missions.js';
+import { storyMatch } from '../engine/story.js';
 export const endingSets = {
  'cinder-prime':[
   {id:'disclosure',title:'Disclosure',summary:'Publish a qualified account with the clients. Retain the source bundle and explain what remains unknown.',
@@ -29,21 +30,25 @@ export const endingSets = {
    closing:'Replacement infrastructure has to be rebuilt from nothing. The relay Halcyon once provisioned will never be used again, by anyone.'}
  ]
 };
+Object.assign(endingSets,scenarioEndings);
 export function endingsFor(scenarioId){ return endingSets[scenarioId]||[]; }
 export const endings = endingSets['cinder-prime'];
 export function endingText(state) {
- const scenarioId=scenarioOf(state.missionId);
+ const scenarioId=scenarioOf(state.missionId),scen=scenarios.find(x=>x.id===scenarioId),ids=missionsFor(scenarioId).map(m=>m.id);
  const list=endingsFor(scenarioId);
- const records=Object.values(state.caseResults),known=records.filter(r=>!r.legacy);
+ const records=ids.map(id=>state.caseResults[id]).filter(Boolean),known=records.filter(r=>!r.legacy);
  const total=known.reduce((n,r)=>n+r.score,0),average=known.length?Math.round(total/known.length):0;
  const outages=known.filter(r=>!r.service).length;
- const strong=known.length>=5&&average>=80;
+ // Original campaign rule: five scored cases (legacy cases excluded). Shorter scenarios need every case scored.
+ const strong=known.length>=Math.min(5,ids.length)&&average>=80;
  const ending=list.find(e=>e.id===state.ending);
  const opening=ending?(strong?ending.openingStrong:ending.openingWeak):'';
+ const epilogues=(scen?.epilogues||[]).filter(p=>storyMatch(state,p.when)).map(p=>p.text);
  return {title:ending?.title||'Unchosen',average,outages,text:[
  `${state.username}, your case is closed. ${opening}`,
  outages?`${outages} recorded response${outages===1?'':'s'} interrupted legitimate services. Recovery crews remember those choices alongside the investigation.`:'The recorded responses preserved legitimate services. The clients remember that you protected their work as well as their systems.',
  ending?.closing||'',
- scenarioId==='cinder-prime'?'TALLOW was the label for the activity, not proof of a person. You exposed its access path and gave the clients a choice. The rest belongs to the people responsible for the investigation.':'COLDRELAY was the label StarX used for the activity cluster, not proof of a person. You closed its access path and corrected an inflated claim. The rest belongs to the people responsible for the investigation.'
- ]};
+ ...epilogues,
+ scen?.coda||''
+ ].filter(Boolean)};
 }

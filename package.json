@@ -1,9 +1,9 @@
 {
   "name": "professor-gito",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "A complete short Cinder investigation campaign with seven cases and three endings.",
+  "description": "A terminal investigation game with five scenarios, branching stories and multiple endings.",
   "engines": {
     "node": ">=20"
   },

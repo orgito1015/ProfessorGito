@@ -2,7 +2,7 @@ import { el,button } from './dom.js';
 import { exercises } from '../content/extras.js';
 export function exercisePanel(state,onSubmit){
  const list=exercises.filter(e=>e.mission===state.missionId);
- return el('section',{},el('h3',{},'Investigation practice'),el('p',{class:'muted'},'Optional exercises use the records you preserved. They do not change your case score.'),list.map(e=>{
+ return el('section',{},el('h3',{},'Investigation practice'),el('p',{class:'muted'},'Optional exercises use the records you preserved. They do not change your case score.'),list.length?null:el('p',{class:'muted'},'No practice exercise for this chapter. The story events in your inbox are the extra layer here.'),list.map(e=>{
   const ready=e.requires.every(id=>state.evidence.includes(id)),solved=state.exerciseSolved.includes(e.id),answer=e.type==='classify'?{}:[];
   const card=el('article',{class:'evidence-card'},el('div',{class:'eyebrow'},e.type.toUpperCase()+(solved?' / SOLVED':'')),el('h3',{},e.title),el('p',{},e.prompt));
   if(!ready){card.append(el('p',{class:'warning'},'Preserve these records first: '+e.requires.join(', ')));return card;}

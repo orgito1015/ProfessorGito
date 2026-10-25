@@ -35,3 +35,11 @@ Service verification and response effects remain discrete authored outcomes. The
 - Tests cover the intended route, reverse clue order, and a plausible failure.
 
 Run `npm run validate` and `npm test`, then play the case in a browser. Validation checks references, not whether a puzzle is enjoyable or every possible authored graph is solvable.
+
+## Scenarios and story fields (2.0)
+
+New scenarios live in `src/content/scenarios/<id>.js` exporting `scenario` (id, title, tagline, setting, difficulty, firstMission, endMission, intro lines, epilogues, coda), `missions` and `endings`; register them in `missions.js`.
+
+Optional mission fields: `story` ([from, subject, body] inbox intro), `date` (in-game clock start), `handler`, `links` (map edges), and `events`: `{id, on, from, subject|chat, text, when}`. Triggers: `start`, `read:<id>`, `collect:<id>`, `flag:<flag>`, `action[:<id>]`, `verified`, `report`, `tick:<n>`, `intel:<key>`.
+
+Conditions (`when`, ending `requires`, epilogue `when`): `{intel, notIntel, chose:'mission:action', notChose}`. Files may set `intel` (recorded when read and carried through the scenario) and `when` (visibility). Actions may set `when` and a custom `verify` line. Nodes may set `motd`, `ports`, `procs`, `conns`, `user`. Validation rejects conditional files that are required, cases without an unconditional response, and scenarios without an always-available ending.
